@@ -84,7 +84,9 @@ MakeAKGFDotplot <- function(presence,
     "ebs", "bs.all", "sebs", "bs.south", "ecs", "ebs.ecs", "ai",
     "ai.west", "ai.central", "ai.east", "goa", "goa.west", "goa.east"
   )) {
-    MAP <- akgfmaps::get_base_layers(select.region = region, set.crs = "auto",use.survey.bathymetry = TRUE)
+    MAP <- akgfmaps::get_base_layers(select.region = region, set.crs = "auto"
+                                     # ,use.survey.bathymetry = TRUE
+                                     )
   } else {
     stop("region not recognized")
   }
