@@ -17,11 +17,10 @@ Authors:
 # Installation
 `EFHSDM` can be installed using the following code:
 ```r
-devtools::install_github("afsc-gap-products/akgfmaps", build_vignettes=TRUE)
-devtools::install_github("alaska-groundfish-efh/EFHSDM@main", dependencies = TRUE, build_vignettes = FALSE)
+pak::pak("alaska-groundfish-efh/EFHSDM@main")
 
 # Development version - not currently recommended unless you are an active developer
-# devtools::install_github("alaska-groundfish-efh/EFHSDM@dev", dependencies = TRUE, build_vignettes = FALSE)
+# pak::pak("alaska-groundfish-efh/EFHSDM@dev")
 ```
 
 
