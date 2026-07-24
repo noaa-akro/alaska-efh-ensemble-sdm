@@ -74,7 +74,7 @@ slope <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GO
 
 raster.stack <- c(lon, lat, bathy, btemp, sponge, coral, pen, phi, aspectE, aspectN, 
                   bcurrentU, bcurrentUSD, bcurrentV, bcurrentVSD, BPI, curve, rockiness, slope)
-names(raster.stack) <- c("lon", "lat", "bdepth", "btemp", "slope", "sponge", "coral", "pen", "phi", "aspectE", "aspectN", 
+names(raster.stack) <- c("lon", "lat", "bdepth", "btemp", "sponge", "coral", "pen", "phi", "aspectE", "aspectN", 
                          "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD", "BPI", "curve", "rockiness", "slope")
 
   # Using terra, the raster values are not automatically passed as factors when plugged into 
