@@ -20,8 +20,15 @@ knitr::opts_chunk$set(
 This is an example vignette for the EFHSDM package. It provides an simplified example that includes several types of SDMs and an example of how to construct a weighted ensemble. 
 
 ```{r setup}
+# # if trouble:
+# # restart (ctr + shift + F10)
+# remove.packages("EFHSDM")
+# remotes::install_github("alaska-groundfish-efh/EFHSDM@dev")
+# # restart (ctr + shift + F10)
+
 library(EFHSDM)
 library(akgfmaps)
+
 ```
 
 # Load the data and add more info
