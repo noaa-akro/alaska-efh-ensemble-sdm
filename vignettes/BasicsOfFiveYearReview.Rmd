@@ -357,14 +357,14 @@ MakeAKGFDensityplot(
 # the threshold .0513 is equivalent to 5% encounter probability under a poisson distribution
 ensemble.breaks <- FindEFHbreaks(
   abund.raster = ensemble.abund, method = "percentile", threshold = .0513,
-  data = species.data, quantiles = c(.05, .25, .5, .75)
+  data = NULL, quantiles = c(.05, .25, .5, .75)
 )
 
 ##############################
 # and the efh map
 ensemble.efh <- terra::classify(ensemble.abund, ensemble.breaks)
 
-MakeAKGFEFHplot(region = "goa", efh.map = ensemble.efh, title.name = figure.name)
+MakeAKGFEFHplot(region = "goa", efh.map = ensemble.efh, title.name = figure.name, , legend.title = "Percentiles")
 
 # this gives the area of the 95% EFH in km2
 sum(terra::values(ensemble.efh) > 1, na.rm = T)
