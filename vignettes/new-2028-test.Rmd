@@ -102,8 +102,11 @@ nice.names <- data.frame(
   )
 )
 
-species <- "a_atf"
-figure.name <- "Adult arrowtooth flounder"
+
+#species <- "a_atf"
+#figure.name <- "Adult arrowtooth flounder"
+species <- "j_sable"
+figure.name <- "Juvenile Sablefish"
 ```
 
 For the example, we will restrict the dataset to the last ten years, note that some species were not adequately identified until a particular year and the dataset should be subsetted accordingly.
@@ -129,8 +132,8 @@ MakeAKGFDotplot(
   dataCRS = terra::crs(raster.stack), region = "goa", title.name = figure.name
 )
 
-gam.form <- stats::formula("a_atf ~ s(lon,lat,bs = 'ds',m=c(1,.5), k=10) + s(bdepth, bs='tp',m=1,k=4) +
-                    s(btemp, bs='tp',m=1,k=4) + s(slope, bs='tp',m=1,k=4) + as.factor(sponge) + offset(logarea)")
+gam.form <- stats::formula(paste0(species, " ~ s(lon,lat,bs = 'ds',m=c(1,.5), k=10) + s(bdepth, bs='tp',m=1,k=4) +
+                    s(btemp, bs='tp',m=1,k=4) + s(slope, bs='tp',m=1,k=4) + as.factor(sponge) + offset(logarea)"))
 ```
 
 
