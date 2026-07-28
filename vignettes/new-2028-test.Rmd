@@ -36,7 +36,8 @@ data("region_data_goa")
 # data("GOA_sponge")
 # data("raster_stack")
 
-
+####MEY (7/27/26) question : Do we want the covariate phi in GOA? It currently is not in the 'region_data_goa' file, so I kept it out for now, but if we want it we will need to add it to the region data
+###Also I dont think tmax is added? need to look into that next 
 
 region.data <- region_data_goa
 
@@ -75,7 +76,7 @@ slope <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GO
 raster.stack <- c(lon, lat, bathy, btemp, sponge, coral, pen, phi, aspectE, aspectN, 
                   bcurrentU, bcurrentUSD, bcurrentV, bcurrentVSD, BPI, curve, rockiness, slope)
 names(raster.stack) <- c("lon", "lat", "bdepth", "btemp", "sponge", "coral", "pen", "phi", "aspectE", "aspectN", 
-                         "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD", "BPI", "curve", "rockiness", "slope")
+                         "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD", "BPI", "curve", "rocky", "slope")
 
   # Using terra, the raster values are not automatically passed as factors when plugged into 
   # terra::predict() as they were with raster::predict(), so we need to tell terra which are factors here.
@@ -89,7 +90,7 @@ nice.names <- data.frame(
   var = c(
     "lon", "lat", "bdepth", "slope", "aspectE", "aspectN", "curve", "btemp", "speed", "tmax", "BPI", "phi", "vitalrate",
     "color", "sponge", "coral", "pen", "area", "bcurrentU", "bcurrentV", "bcurrentUSD", "bcurrentVSD", "lon*lat",
-    "bcurrentU*bcurrentV", "bcurrentUSD*bcurrentVSD", "aspectE*aspectN", "rocky"
+    "bcurrentU*bcurrentV", "bcurrentUSD*bcurrentVSD", "aspectE*aspectN", "rockiness"
   ),
   name = c(
     "Longitude", "Latitude", "Depth (m)", "Slope (degrees)", "Slope Eastness", "Slope Northness",
@@ -105,8 +106,8 @@ nice.names <- data.frame(
 
 #species <- "a_atf"
 #figure.name <- "Adult arrowtooth flounder"
-species <- "j_sable"
-figure.name <- "Juvenile Sablefish"
+species <- "a_sable"
+figure.name <- "Adult Sablefish"
 ```
 
 For the example, we will restrict the dataset to the last ten years, note that some species were not adequately identified until a particular year and the dataset should be subsetted accordingly.
@@ -132,8 +133,27 @@ MakeAKGFDotplot(
   dataCRS = terra::crs(raster.stack), region = "goa", title.name = figure.name
 )
 
-gam.form <- stats::formula(paste0(species, " ~ s(lon,lat,bs = 'ds',m=c(1,.5), k=10) + s(bdepth, bs='tp',m=1,k=4) +
-                    s(btemp, bs='tp',m=1,k=4) + s(slope, bs='tp',m=1,k=4) + as.factor(sponge) + offset(logarea)"))
+
+# gam.form <- stats::formula(paste0(species, " ~ s(lon, lat, bs = 'ds', m = c(1,0.5), k= 10) + s(bdepth, bs='tp',m=1,k=4) +
+#                     s(btemp, bs='tp', m=1, k=4) + s(slope, bs = 'tp', m = 1,k = 4) + as.factor(sponge) + offset(logarea)"))
+
+gam.form <- stats::formula(paste0(species, " ~ s(lon, lat, bs = 'ds', m = c(1,.5), k=10) + 
+                                  s(bdepth, bs='tp',m=1,k=4) + 
+                                  s(btemp, bs='tp',m=1,k=4) +
+                                  s(slope, bs='tp',m=1,k=4) + 
+                                  s(BPI, bs='tp',m=1,k=4) + 
+                                  s(curve, bs='tp',m=1,k=4) + 
+                                  s(rocky, bs='tp',m=1,k=4) +
+                                  s(aspectE, bs='tp',m=1,k=4) + 
+                                  s(aspectN, bs='tp',m=1,k=4) +  
+                                  s(bcurrentU, bs='tp',m=1,k=4) + 
+                                  s(bcurrentUSD, bs='tp',m=1,k=4) + 
+                                  s(bcurrentV, bs='tp',m=1,k=4) +
+                                  s(bcurrentVSD, bs='tp',m=1,k=4) +
+                                  as.factor(sponge) + 
+                                  as.factor(coral) + 
+                                  as.factor(pen) + 
+                                  offset(logarea)"))
 ```
 
 
@@ -144,7 +164,8 @@ gam.form <- stats::formula(paste0(species, " ~ s(lon,lat,bs = 'ds',m=c(1,.5), k=
 ```{r eval=FALSE}
 maxnet.model <- FitMaxnet(
   data = species.data, species = species,
-  vars = c("lon", "lat", "btemp", "bdepth", "slope"), facs = "sponge",
+  vars = c("lon", "lat", "btemp", "bdepth", "slope", "BPI", "curve", "rocky", "aspectE", "aspectN", 
+                         "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD"), facs = c("sponge", "coral", "pen"),
   regmult = 1, reduce = T
 )
 
@@ -213,9 +234,25 @@ cloglog.rmse <- RMSE(pred = cloglog.errors$cvpred, obs = cloglog.errors$abund)
 
 ziplss GAMs require a separate formula for the probability part of the model, and it should leave off the dependent variable
 ```{r eval=FALSE}
-prob.form <- stats::formula("~ s(lon,lat,bs = 'ds',m=c(1,.5), k=10) + s(bdepth, bs='tp',m=1,k=4) +
-                    s(btemp, bs='tp',m=1,k=4) + s(slope, bs='tp',m=1,k=4) + as.factor(sponge) + offset(logarea)")
-
+# prob.form <- stats::formula("~ s(lon,lat,bs = 'ds',m=c(1,.5), k=10) + s(bdepth, bs='tp',m=1,k=4) +
+#                     s(btemp, bs='tp',m=1,k=4) + s(slope, bs='tp',m=1,k=4) + as.factor(sponge) + offset(logarea)")
+prob.form <- stats::formula(" ~ s(lon, lat, bs = 'ds', m = c(1,.5), k=10) + 
+                                  s(bdepth, bs='tp',m=1,k=4) + 
+                                  s(btemp, bs='tp',m=1,k=4) +
+                                  s(slope, bs='tp',m=1,k=4) + 
+                                  s(BPI, bs='tp',m=1,k=4) + 
+                                  s(curve, bs='tp',m=1,k=4) + 
+                                  s(rocky, bs='tp',m=1,k=4) +
+                                  s(aspectE, bs='tp',m=1,k=4) + 
+                                  s(aspectN, bs='tp',m=1,k=4) +  
+                                  s(bcurrentU, bs='tp',m=1,k=4) + 
+                                  s(bcurrentUSD, bs='tp',m=1,k=4) + 
+                                  s(bcurrentV, bs='tp',m=1,k=4) +
+                                  s(bcurrentVSD, bs='tp',m=1,k=4) +
+                                  as.factor(sponge) + 
+                                  as.factor(coral) + 
+                                  as.factor(pen) + 
+                                  offset(logarea)")
 hpoisson.model <- FitHurdleGAM(
   density.formula = gam.form, prob.formula = prob.form,
   data = species.data, verbose = F, select = T, reduce = T
@@ -405,7 +442,7 @@ ensemble.plots <- Effectsplot(
   effects.list = ensemble.effects, region = "goa", crs = terra::crs(raster.stack),
   nice.names = nice.names, vars = "all"
 )
-gridExtra::grid.arrange(grobs = ensemble.plots, ncol = 3, nrow = 2)
+gridExtra::grid.arrange(grobs = ensemble.plots, ncol = 3)
 
 
 # this makes a useful data frame of the ensemble predictions
