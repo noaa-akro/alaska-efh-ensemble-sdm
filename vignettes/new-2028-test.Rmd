@@ -27,7 +27,8 @@ library(akgfmaps)
 # Load the data and add more info
 
 ```{r eval=FALSE}
-data("region_data_goa") 
+region_data_goa <- readRDS(here::here("data", "all_GOA_data_1993_2025.rds"))
+# data(region_data_goa)
 # data("GOA_bathy") 
 # data("GOA_btemp")
 # data("GOA_lat")
@@ -36,15 +37,10 @@ data("region_data_goa")
 # data("GOA_sponge")
 # data("raster_stack")
 
-####MEY (7/27/26) question : Do we want the covariate phi in GOA? It currently is not in the 'region_data_goa' file, so I kept it out for now, but if we want it we will need to add it to the region data
-###Also I dont think tmax is added? need to look into that next 
-
 region.data <- region_data_goa
 
-
-
-region.data$j_rebs <- region.data$j_rebs + region.data$j_rough + region.data$j_bspot
-region.data$a_rebs <- region.data$a_rebs + region.data$a_rough + region.data$a_bspot
+#region.data$j_rebs <- region.data$j_rebs + region.data$j_rough + region.data$j_bspot
+#region.data$a_rebs <- region.data$a_rebs + region.data$a_rough + region.data$a_bspot
 
 region.data$sponge <- as.integer(region.data$sponge > 0)
 region.data$coral <- as.integer(region.data$coral > 0)
@@ -66,17 +62,15 @@ bcurrentU <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariate
 bcurrentUSD <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/bcurrentUSD_GOA.tif")
 bcurrentV <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/bcurrentV_GOA.tif")
 bcurrentVSD <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/bcurrentVSD_GOA.tif")
+tmax <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/tmax_GOA.tif")
 BPI <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/BPI_GOA.tif")
 curve <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/curve_GOA.tif")
 rockiness <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/rockiness_GOA.tif")
 slope <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/slope_GOA.tif")
 
-
-
 raster.stack <- c(lon, lat, bathy, btemp, sponge, coral, pen, phi, aspectE, aspectN, 
-                  bcurrentU, bcurrentUSD, bcurrentV, bcurrentVSD, BPI, curve, rockiness, slope)
-names(raster.stack) <- c("lon", "lat", "bdepth", "btemp", "sponge", "coral", "pen", "phi", "aspectE", "aspectN", 
-                         "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD", "BPI", "curve", "rocky", "slope")
+                  bcurrentU, bcurrentUSD, bcurrentV, bcurrentVSD, tmax, BPI, curve, rockiness, slope)
+names(raster.stack) <- c("lon", "lat", "bdepth", "btemp", "sponge", "coral", "pen", "phi", "aspectE", "aspectN",  "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD", "tmax", "BPI", "curve", "rocky", "slope")
 
   # Using terra, the raster values are not automatically passed as factors when plugged into 
   # terra::predict() as they were with raster::predict(), so we need to tell terra which are factors here.
@@ -90,7 +84,7 @@ nice.names <- data.frame(
   var = c(
     "lon", "lat", "bdepth", "slope", "aspectE", "aspectN", "curve", "btemp", "speed", "tmax", "BPI", "phi", "vitalrate",
     "color", "sponge", "coral", "pen", "area", "bcurrentU", "bcurrentV", "bcurrentUSD", "bcurrentVSD", "lon*lat",
-    "bcurrentU*bcurrentV", "bcurrentUSD*bcurrentVSD", "aspectE*aspectN", "rockiness"
+    "bcurrentU*bcurrentV", "bcurrentUSD*bcurrentVSD", "aspectE*aspectN", "rocky"
   ),
   name = c(
     "Longitude", "Latitude", "Depth (m)", "Slope (degrees)", "Slope Eastness", "Slope Northness",
@@ -103,17 +97,16 @@ nice.names <- data.frame(
   )
 )
 
-
 #species <- "a_atf"
 #figure.name <- "Adult arrowtooth flounder"
-species <- "a_sable"
-figure.name <- "Adult Sablefish"
+species <- "j_sable"
+figure.name <- "Subadult Sablefish"
 ```
 
 For the example, we will restrict the dataset to the last ten years, note that some species were not adequately identified until a particular year and the dataset should be subsetted accordingly.
 
 ```{r eval=FALSE}
-start.year <- 2012
+start.year <- 2010
 
 species.data <- subset(region.data, year >= start.year)
 
@@ -150,6 +143,8 @@ gam.form <- stats::formula(paste0(species, " ~ s(lon, lat, bs = 'ds', m = c(1,.5
                                   s(bcurrentUSD, bs='tp',m=1,k=4) + 
                                   s(bcurrentV, bs='tp',m=1,k=4) +
                                   s(bcurrentVSD, bs='tp',m=1,k=4) +
+                                  s(tmax, bs='tp',m=1,k=4) +
+                                  s(phi, bs='tp',m=1,k=4) +
                                   as.factor(sponge) + 
                                   as.factor(coral) + 
                                   as.factor(pen) + 
@@ -165,7 +160,7 @@ gam.form <- stats::formula(paste0(species, " ~ s(lon, lat, bs = 'ds', m = c(1,.5
 maxnet.model <- FitMaxnet(
   data = species.data, species = species,
   vars = c("lon", "lat", "btemp", "bdepth", "slope", "BPI", "curve", "rocky", "aspectE", "aspectN", 
-                         "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD"), facs = c("sponge", "coral", "pen"),
+                         "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD", "tmax", "phi"), facs = c("sponge", "coral", "pen"),
   regmult = 1, reduce = T
 )
 
@@ -249,6 +244,8 @@ prob.form <- stats::formula(" ~ s(lon, lat, bs = 'ds', m = c(1,.5), k=10) +
                                   s(bcurrentUSD, bs='tp',m=1,k=4) + 
                                   s(bcurrentV, bs='tp',m=1,k=4) +
                                   s(bcurrentVSD, bs='tp',m=1,k=4) +
+                                  s(tmax, bs='tp',m=1,k=4) +
+                                  s(phi, bs='tp',m=1,k=4) +
                                   as.factor(sponge) + 
                                   as.factor(coral) + 
                                   as.factor(pen) + 
@@ -378,8 +375,6 @@ poisson.variance <- MakeVarianceRasters(
   model.type = "gam", scale.factor = poisson.scale
 )
 
-
-
 ##############################
 # and the deviance estimates
 # in order to keep the deviance estimates consistent with the GAM, specify a "maxnet2d" argument as a list
@@ -395,8 +390,8 @@ poisson.devs <- GAMStats(model = poisson.model, data = species.data)
 
 # take a weighted average for the ensemble deviance explained
 dev.dat <- rbind(
-  maxnet.devs,
-  c(cloglog.devs, slope = 0), # slope was dropped from the cloglog model, so it explains 0
+  c(maxnet.devs, coral = 0),
+  c(cloglog.devs, slope = 0, curve = 0, bcurrentU  = 0, bcurrentUSD  = 0, bcurrentV  = 0, bcurrentVSD = 0, phi = 0, sponge =0), # slope was dropped from the cloglog model, so it explains 0
   hpoisson.devs,
   poisson.devs
 )
