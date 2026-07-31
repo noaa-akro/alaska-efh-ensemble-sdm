@@ -27,20 +27,8 @@ library(akgfmaps)
 # Load the data and add more info
 
 ```{r eval=FALSE}
-region_data_goa <- readRDS(here::here("data", "all_GOA_data_1993_2025.rds"))
-# data(region_data_goa)
-# data("GOA_bathy") 
-# data("GOA_btemp")
-# data("GOA_lat")
-# data("GOA_lon")
-# data("GOA_slope")
-# data("GOA_sponge")
-# data("raster_stack")
-
-region.data <- region_data_goa
-
-#region.data$j_rebs <- region.data$j_rebs + region.data$j_rough + region.data$j_bspot
-#region.data$a_rebs <- region.data$a_rebs + region.data$a_rough + region.data$a_bspot
+region <- "GOA"
+region.data <- readRDS(here::here("data", paste0("all_", region, "_data_1993_2025.rds")))
 
 region.data$sponge <- as.integer(region.data$sponge > 0)
 region.data$coral <- as.integer(region.data$coral > 0)
@@ -48,25 +36,7 @@ region.data$pen <- as.integer(region.data$pen > 0)
 
 region.data$logarea <- log(region.data$area)
 
-lon <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/lon_GOA.tif")
-lat <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/lat_GOA.tif")
-bathy <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/bathy_GOA.tif")
-btemp <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/btemp_GOA.tif")
-sponge <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/sponge_GOA.tif")
-coral <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/coral_GOA.tif")
-pen <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/pen_GOA.tif")
-phi <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/phi_GOA.tif")
-aspectE <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/aspectE_GOA.tif")
-aspectN <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/aspectN_GOA.tif")
-bcurrentU <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/bcurrentU_GOA.tif")
-bcurrentUSD <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/bcurrentUSD_GOA.tif")
-bcurrentV <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/bcurrentV_GOA.tif")
-bcurrentVSD <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/bcurrentVSD_GOA.tif")
-tmax <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/tmax_GOA.tif")
-BPI <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/BPI_GOA.tif")
-curve <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/curve_GOA.tif")
-rockiness <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/rockiness_GOA.tif")
-slope <- terra::rast("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/GOA/slope_GOA.tif")
+raster.stack <- terra::rast(paste0("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/", region, "/raster_stack_", region, ".tiff"))
 
 raster.stack <- c(lon, lat, bathy, btemp, sponge, coral, pen, phi, aspectE, aspectN, 
                   bcurrentU, bcurrentUSD, bcurrentV, bcurrentVSD, tmax, BPI, curve, rockiness, slope)
@@ -77,7 +47,6 @@ names(raster.stack) <- c("lon", "lat", "bdepth", "btemp", "sponge", "coral", "pe
 raster.stack$sponge <- terra::as.factor(raster.stack$sponge)
 raster.stack$coral <- terra::as.factor(raster.stack$coral)
 raster.stack$pen <- terra::as.factor(raster.stack$pen)
-
 
 nice.names <- data.frame(
   stringsAsFactors = F,
