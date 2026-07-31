@@ -163,9 +163,9 @@ Effectsplot <- function(effects.list, region = NA, crs = NA, nice.names = NULL, 
     if (nrow(e.data) == 100) {
       xname <- nice.names$name[which(nice.names$var == names(effects.list2)[j])]
 
-      span<-max(e.data$effect,na.rm=T)-min(e.data$effect,na.rm=T)
-      upper.lim<-max(e.data$effect,na.rm=T)+3*span
-      lower.lim<-min(e.data$effect,na.rm=T)-3*span
+      span <- max(e.data$effect, na.rm=T)-min(e.data$effect, na.rm=T)
+      upper.lim <- max(e.data$effect, na.rm=T)+3*span
+      lower.lim <- min(e.data$effect, na.rm=T)-3*span
 
       # start the plot
       var.plot <- ggplot2::ggplot() +
@@ -183,8 +183,10 @@ Effectsplot <- function(effects.list, region = NA, crs = NA, nice.names = NULL, 
         y.lim<-c(lower.lim,upper.lim)
       }
 
-      if(any(!is.na(y.lim))){var.plot<-var.plot+ggplot2::ylim(y.lim)}
-      var.plot<-var.plot +ggplot2::xlab(xname) +
+      if(any(!is.na(y.lim))){
+        var.plot<-var.plot+ggplot2::ylim(y.lim)
+        }
+      var.plot<- var.plot +ggplot2::xlab(xname) +
         ggplot2::ylab("Variable Effect") +
         ggplot2::theme_bw() +
         ggplot2::theme(
@@ -196,6 +198,7 @@ Effectsplot <- function(effects.list, region = NA, crs = NA, nice.names = NULL, 
     }
     if (nrow(e.data) < 10) {
       # now the factors
+      x_labels <- as.character(e.data$x)
       xname <- nice.names$name[which(nice.names$var == names(effects.list2)[j])]
       e.data$x <- as.numeric(as.character(e.data$x))
 
@@ -203,14 +206,14 @@ Effectsplot <- function(effects.list, region = NA, crs = NA, nice.names = NULL, 
         ggplot2::geom_segment(data = e.data, ggplot2::aes(y = effect, yend = effect, x = x - .35, xend = x + .35), linewidth = 2)
 
       if("lower"%in%names(e.data)){
-        var.plot<-var.plot+
+        var.plot <- var.plot+
           ggplot2::geom_segment(data = e.data, ggplot2::aes(y = lower, yend = lower, x = x - .35, xend = x + .35), linewidth = 1, linetype = 2) +
           ggplot2::geom_segment(data = e.data, ggplot2::aes(y = upper, yend = upper, x = x - .35, xend = x + .35), linewidth = 1, linetype = 2)
       }
-      var.plot+
+     var.plot <-  var.plot +
         ggplot2::xlab(xname) +
         ggplot2::ylab("Variable Effect") +
-        ggplot2::scale_x_continuous(breaks = (e.data$x)) +
+        ggplot2::scale_x_continuous(breaks = (e.data$x), labels = x_labels) +
         ggplot2::theme_bw() +
         ggplot2::theme(
           panel.border = ggplot2::element_rect(color = "black", fill = NA),

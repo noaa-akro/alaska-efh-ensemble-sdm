@@ -38,8 +38,6 @@ region.data$logarea <- log(region.data$area)
 
 raster.stack <- terra::rast(paste0("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/", region, "/covariate_raster_stack_", region, ".tiff"))
 
-raster.stack <- c(lon, lat, bathy, btemp, sponge, coral, pen, phi, aspectE, aspectN, 
-                  bcurrentU, bcurrentUSD, bcurrentV, bcurrentVSD, tmax, BPI, curve, rockiness, slope)
 names(raster.stack) <- c("lon", "lat", "bdepth", "btemp", "sponge", "coral", "pen", "phi", "aspectE", "aspectN",  "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD", "tmax", "BPI", "curve", "rocky", "slope")
 
 # Using terra, the raster values are not automatically passed as factors when plugged into 
@@ -68,14 +66,14 @@ nice.names <- data.frame(
 
 #species <- "a_atf"
 #figure.name <- "Adult arrowtooth flounder"
-species <- "j_sable"
-figure.name <- "Subadult Sablefish"
+species <- "a_sable"
+figure.name <- "Adult Sablefish"
 ```
 
 For the example, we will restrict the dataset to the last ten years, note that some species were not adequately identified until a particular year and the dataset should be subsetted accordingly.
 
 ```{r eval=FALSE}
-start.year <- 2010
+start.year <- 2009
 
 species.data <- subset(region.data, year >= start.year)
 
@@ -154,7 +152,7 @@ maxnet.rmse <- RMSE(pred = maxnet.errors$cvpred, obs = maxnet.errors$abund)
 maxnet.effects <- GetMaxnetEffects(
   model = maxnet.model, cv.models = maxnet.cv.models,
   vars = "all", add.entropy = T, scale = "log", data = species.data,
-  maxnet2d = list(c("lon", "lat")), scale.factor = maxnet.scale
+  maxnet2d = list(c("lon", "lat"), c("bcurrentU","bcurrentV"),c("bcurrentUSD","bcurrentVSD")), scale.factor = maxnet.scale
 )
 ```
 
@@ -207,10 +205,8 @@ prob.form <- stats::formula(" ~ s(lon, lat, bs = 'ds', m = c(1,.5), k=10) +
                                   s(rocky, bs='tp',m=1,k=4) +
                                   s(aspectE, bs='tp',m=1,k=4) + 
                                   s(aspectN, bs='tp',m=1,k=4) +  
-                                  s(bcurrentU, bs='tp',m=1,k=4) + 
-                                  s(bcurrentUSD, bs='tp',m=1,k=4) + 
-                                  s(bcurrentV, bs='tp',m=1,k=4) +
-                                  s(bcurrentVSD, bs='tp',m=1,k=4) +
+                                  s(bcurrentU, bcurrentV, bs = 'ds', m = c(1,.5), k=10) + 
+                                  s(bcurrentUSD, bcurrentVSD, bs = 'ds', m = c(1,.5), k=10) + 
                                   s(tmax, bs='tp',m=1,k=4) +
                                   s(phi, bs='tp',m=1,k=4) +
                                   as.factor(sponge) + 
