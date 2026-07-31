@@ -36,14 +36,14 @@ region.data$pen <- as.integer(region.data$pen > 0)
 
 region.data$logarea <- log(region.data$area)
 
-raster.stack <- terra::rast(paste0("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/", region, "/raster_stack_", region, ".tiff"))
+raster.stack <- terra::rast(paste0("M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/", region, "/covariate_raster_stack_", region, ".tiff"))
 
 raster.stack <- c(lon, lat, bathy, btemp, sponge, coral, pen, phi, aspectE, aspectN, 
                   bcurrentU, bcurrentUSD, bcurrentV, bcurrentVSD, tmax, BPI, curve, rockiness, slope)
 names(raster.stack) <- c("lon", "lat", "bdepth", "btemp", "sponge", "coral", "pen", "phi", "aspectE", "aspectN",  "bcurrentU", "bcurrentUSD", "bcurrentV", "bcurrentVSD", "tmax", "BPI", "curve", "rocky", "slope")
 
-  # Using terra, the raster values are not automatically passed as factors when plugged into 
-  # terra::predict() as they were with raster::predict(), so we need to tell terra which are factors here.
+# Using terra, the raster values are not automatically passed as factors when plugged into 
+# terra::predict() as they were with raster::predict(), so we need to tell terra which are factors here.
 raster.stack$sponge <- terra::as.factor(raster.stack$sponge)
 raster.stack$coral <- terra::as.factor(raster.stack$coral)
 raster.stack$pen <- terra::as.factor(raster.stack$pen)
@@ -107,11 +107,9 @@ gam.form <- stats::formula(paste0(species, " ~ s(lon, lat, bs = 'ds', m = c(1,.5
                                   s(curve, bs='tp',m=1,k=4) + 
                                   s(rocky, bs='tp',m=1,k=4) +
                                   s(aspectE, bs='tp',m=1,k=4) + 
-                                  s(aspectN, bs='tp',m=1,k=4) +  
-                                  s(bcurrentU, bs='tp',m=1,k=4) + 
-                                  s(bcurrentUSD, bs='tp',m=1,k=4) + 
-                                  s(bcurrentV, bs='tp',m=1,k=4) +
-                                  s(bcurrentVSD, bs='tp',m=1,k=4) +
+                                  s(aspectN, bs='tp',m=1,k=4) +
+                                  s(bcurrentU, bcurrentV, bs = 'ds', m = c(1,.5), k=10) +
+                                  s(bcurrentUSD, bcurrentVSD, bs = 'ds', m = c(1,.5), k=10) +
                                   s(tmax, bs='tp',m=1,k=4) +
                                   s(phi, bs='tp',m=1,k=4) +
                                   as.factor(sponge) + 
