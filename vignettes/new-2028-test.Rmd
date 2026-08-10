@@ -22,6 +22,7 @@ This is an example vignette for the EFHSDM package. It provides an simplified ex
 ```{r setup}
 library(EFHSDM)
 library(akgfmaps)
+devtools::load_all()
 ```
 
 # Load the data and add more info
@@ -139,9 +140,29 @@ maxnet.abund <- MakeMaxEntAbundance(
 )
 
 # Now cross-validate and get fit metrics
+# maxnet.cv <- CrossValidateModel(
+#   model = maxnet.model, 
+#   data = species.data, 
+#   species = species, 
+#   group = "Folds",
+#   model.type = "maxnet", 
+#   key = "hauljoin", 
+#   scale.preds = T, 
+#   regmult = 1
+# )
 maxnet.cv <- CrossValidateModel(
-  model = maxnet.model, data = species.data, species = species, group = "Folds",
-  model.type = "maxnet", key = "hauljoin", scale.preds = T, regmult = 1
+  model = maxnet.model, 
+  data = species.data, 
+  species = species, 
+  model.type = "maxnet", 
+  key = "hauljoin", 
+  scale.preds = T, 
+  regmult = 1,
+  group = "block",
+  folds = 3,
+  block.size = 50000,          
+  coords = c("lon", "lat"),        
+  crs = 3338
 )
 maxnet.errors <- maxnet.cv[[1]]
 maxnet.cv.models <- maxnet.cv[[2]]
@@ -175,19 +196,88 @@ cloglog.abund <- MakeGAMAbundance(
   filename = ""
 )
 
-cloglog.cv <- CrossValidateModel(
-  model = cloglog.model, model.type = "cloglog", data = species.data, scale.preds = T,
-  species = species, group = "Folds", key = "hauljoin"
+cloglog.cv1 <- CrossValidateModel(
+  model = cloglog.model, 
+  model.type = "cloglog", 
+  data = species.data, 
+  scale.preds = T,
+  species = species, 
+  group = "Folds", 
+  key = "hauljoin"
 )
-cloglog.errors <- cloglog.cv[[1]]
-cloglog.cv.models <- cloglog.cv[[2]]
+
+cloglog.cv2 <- CrossValidateModel(
+  model = cloglog.model, 
+  model.type = "cloglog", 
+  data = species.data, 
+  scale.preds = T,
+  species = species, 
+  key = "hauljoin",
+  group = "block",
+  folds = 10,
+  block.size = 50000,          
+  coords = c("lon", "lat"),        
+  crs = 3338
+)
+
+#CV random
+cloglog.errors <- cloglog.cv1[[1]]
+cloglog.cv.models <- cloglog.cv1[[2]]
 
 cloglog.effects <- GetGAMEffects(
   model = cloglog.model, data = species.data, vars = "all", scale = "log",
   cv.model.list = cloglog.cv.models, scale.factor = cloglog.scale
 )
 
-cloglog.rmse <- RMSE(pred = cloglog.errors$cvpred, obs = cloglog.errors$abund)
+cloglog.rmse1 <- RMSE(pred = cloglog.errors$cvpred, obs = cloglog.errors$abund)
+
+#BlockCV
+cloglog.errors2 <- cloglog.cv2[[1]]
+cloglog.cv.models2 <- cloglog.cv2[[2]]
+
+cloglog.effects2 <- GetGAMEffects(
+  model = cloglog.model, data = species.data, vars = "all", scale = "log",
+  cv.model.list = cloglog.cv.models2, scale.factor = cloglog.scale
+)
+
+cloglog.rmse2 <- RMSE(pred = cloglog.errors2$cvpred, obs = cloglog.errors2$abund)
+
+cloglog.rmse1
+cloglog.rmse2
+
+#compare the effects plots
+
+# Function to bind effect data from two models for a specific covariate
+compare_effect_curves <- function(effects1, effects2, cov_name, model1_label = "Model 1", model2_label = "Model 2") {
+  
+  df1 <- effects1[[cov_name]] %>% mutate(Model = model1_label)
+  df2 <- effects2[[cov_name]] %>% mutate(Model = model2_label)
+  
+  combined_df <- bind_rows(df1, df2)
+  
+  # Plot the overall partial effect curve comparison
+  p <- ggplot(combined_df, aes(x = x, y = effect, color = Model, fill = Model, linetype = Model)) +
+    geom_line(linewidth = 1) +
+    labs(
+      title = paste("Partial Effect Comparison:", cov_name),
+      x = cov_name,
+      y = "Effect"
+    ) +
+    theme_minimal()
+  
+  # Include confidence intervals if upper/lower bounds are present
+  if (all(c("upper", "lower") %in% names(combined_df))) {
+    p <- p + geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA)
+  }
+  
+  return(p)
+}
+
+# Example usage for 'bdepth':
+compare_effect_curves(cloglog.effects, cloglog.effects2, "bdepth", "Baseline GAM", "Spatial CV GAM")
+
+
+
 ```
 
 #Hurdle GAM
@@ -226,8 +316,13 @@ hpoisson.abund <- MakeGAMAbundance(
 ) # This makes a SpatRaster object
 
 hpoisson.cv <- CrossValidateModel(
-  model = hpoisson.model, model.type = "hgam", data = species.data,
-  species = species, group = "Folds", key = "hauljoin", scale.preds = T
+  model = hpoisson.model, 
+  model.type = "hgam", 
+  data = species.data,
+  species = species, 
+  group = "Folds", 
+  key = "hauljoin", 
+  scale.preds = T
 )
 
 hpoisson.errors <- hpoisson.cv[[1]]
@@ -258,8 +353,13 @@ poisson.abund <- MakeGAMAbundance(
 )
 
 poisson.cv <- CrossValidateModel(
-  model = poisson.model, model.type = "gam", species = species, data = species.data,
-  group = "Folds", key = "hauljoin", scale.preds = T
+  model = poisson.model, 
+  model.type = "gam", 
+  species = species, 
+  data = species.data,
+  group = "Folds", 
+  key = "hauljoin", 
+  scale.preds = T
 )
 poisson.errors <- poisson.cv[[1]]
 poisson.cv.models <- poisson.cv[[2]]
@@ -289,8 +389,13 @@ negbin.abund <- MakeGAMAbundance(
 )
 
 negbin.cv <- CrossValidateModel(
-  model = negbin.model, model.type = "gam", species = species, data = species.data,
-  group = "Folds", key = "hauljoin", scale.preds = T
+  model = negbin.model, 
+  model.type = "gam", 
+  species = species, 
+  data = species.data,
+  group = "Folds", 
+  key = "hauljoin", 
+  scale.preds = T
 )
 
 negbin.errors <- negbin.cv[[1]]

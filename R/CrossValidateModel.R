@@ -27,7 +27,10 @@ CrossValidateModel<-function(model,
                              key=NA,
                              species=NA,
                              folds=10,
-                             group="random"){
+                             group="random",
+                             block.size = 50000,
+                             coords = c("lon", "lat"),
+                             crs = 4326){
   if(model.type!="maxnet"){
     species<-ifelse(model$family$family=="ziplss",as.character(stats::formula(model)[[1]])[[2]],as.character(stats::formula(model))[[2]])
   }
@@ -38,9 +41,47 @@ CrossValidateModel<-function(model,
   model.list<-list()
   scale.factor=1
 
+  # 👈 NEW: SPATIAL BLOCK CV ASSIGNMENT (blockCV)
+  if (group %in% c("block", "spatial", "blockCV")) {
+    if (!all(coords %in% names(data))) {
+      stop("Specified coordinate columns ('", paste(coords, collapse = "', '"), "') not found in 'data'.")
+    }
+
+    # 1. Convert data to simple features (sf) object
+    data_sf <- sf::st_as_sf(data, coords = coords, crs = crs)
+
+    # 2. Run blockCV to generate spatial blocks
+    set.seed(42)
+    sb <- blockCV::cv_spatial(
+      x = data_sf,
+      k = folds,
+      size = block.size,
+      hexagon = FALSE,
+      selection = "random",
+      iteration = 100,
+      progress = FALSE
+    )
+
+    # 3. Join fold IDs back to the original dataset
+    blocks_poly <- sb$blocks
+    joined_sf <- sf::st_join(data_sf, blocks_poly["folds"], join = sf::st_intersects)
+    data$group <- joined_sf$folds
+
+    # 4. Handle boundary points (assign unassigned points to nearest fold)
+    if (any(is.na(data$group))) {
+      na_idx <- which(is.na(data$group))
+      nearest_idx <- sf::st_nearest_feature(data_sf[na_idx, ], blocks_poly)
+      data$group[na_idx] <- blocks_poly$folds[nearest_idx]
+    }
+
+    group <- "group"
+
+    # EXISTING: RANDOM STRATIFIED FOLD ASSIGNMENT
+  } else if (group == "random") {
+
   # first, check if we need to do randomization, going to apportion things so that even distribution of
   # presences/absences is evenish
-  if(group=="random"){
+
     # a bunch of checks figure out how many presence and absences
     n.tot<-nrow(data)
     n.pres<-sum(data[,species]>0)
@@ -83,11 +124,11 @@ CrossValidateModel<-function(model,
 
   out.names<-NULL
   #Set up the output table
-  if(is.na(key)==F){
+  if (!is.na(key)) {
     out.names<-key
   }
-  if(sum(c("lon","lat")%in%names(data))==2){
-    out.names<-c(out.names,"lon","lat")
+  if (all(coords %in% names(data))) {
+    out.names <- c(out.names, coords)
   }
 
   out.names<-c(out.names,group,"abund","pred","prob","cvpred","cvprob","error","cverror")
@@ -106,12 +147,12 @@ CrossValidateModel<-function(model,
 
 
     error.data[start.vec[i]:end.vec[i],group]<-fold.vec[i]
-    if(is.na(key)==F){
+    if(!is.na(key)){
       error.data[start.vec[i]:end.vec[i],1]<-test.data[,key]
     }
-    if("lon"%in%out.names){
-      error.data$lon[start.vec[i]:end.vec[i]]<-test.data$lon
-      error.data$lat[start.vec[i]:end.vec[i]]<-test.data$lat
+    if (all(coords %in% out.names)) {
+      error.data[start.vec[i]:end.vec[i], coords[1]] <- test.data[[coords[1]]]
+      error.data[start.vec[i]:end.vec[i], coords[2]] <- test.data[[coords[2]]]
     }
     error.data[start.vec[i]:end.vec[i],group]<-fold.vec[i]
     error.data$abund[start.vec[i]:end.vec[i]]<-test.data[,species]
