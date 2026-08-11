@@ -22,11 +22,8 @@ This is an example vignette for the EFHSDM package. It provides an simplified ex
 ```{r setup}
 library(EFHSDM)
 library(akgfmaps)
-<<<<<<< Updated upstream
-=======
 library(dplyr)
-devtools::load_all()
->>>>>>> Stashed changes
+
 ```
 
 # Load the data and add more info
@@ -183,12 +180,11 @@ maxnet.abund <- MakeMaxEntAbundance(
   scale.fac = maxnet.scale, type = "cloglog"
 )
 
-<<<<<<< Updated upstream
 # Now cross-validate and get fit metrics
 maxnet.cv <- CrossValidateModel(
   model = maxnet.model, data = species.data, species = species, group = "Folds",
   model.type = "maxnet", key = "hauljoin", scale.preds = T, regmult = 1
-=======
+
 Now cross-validate and get fit metrics
 maxnet.cv <- CrossValidateModel(
   model = maxnet.model,
@@ -199,7 +195,7 @@ maxnet.cv <- CrossValidateModel(
   key = "hauljoin",
   scale.preds = T,
   regmult = 1
->>>>>>> Stashed changes
+
 )
 
 maxnet.errors <- maxnet.cv[[1]]
@@ -234,14 +230,14 @@ cloglog.abund <- MakeGAMAbundance(
   filename = ""
 )
 
-<<<<<<< Updated upstream
+
 cloglog.cv <- CrossValidateModel(
   model = cloglog.model, model.type = "cloglog", data = species.data, scale.preds = T,
   species = species, group = "Folds", key = "hauljoin"
 )
 cloglog.errors <- cloglog.cv[[1]]
 cloglog.cv.models <- cloglog.cv[[2]]
-=======
+
 cloglog.cv1 <- CrossValidateModel(
   model = cloglog.model, 
   model.type = "cloglog", 
@@ -265,7 +261,7 @@ cloglog.cv2 <- CrossValidateModel(
 #CV random
 cloglog.errors <- cloglog.cv1[[1]]
 cloglog.cv.models <- cloglog.cv1[[2]]
->>>>>>> Stashed changes
+
 
 cloglog.effects <- GetGAMEffects(
   model = cloglog.model, data = species.data, vars = "all", scale = "log",
