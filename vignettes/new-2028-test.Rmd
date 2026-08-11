@@ -22,6 +22,11 @@ This is an example vignette for the EFHSDM package. It provides an simplified ex
 ```{r setup}
 library(EFHSDM)
 library(akgfmaps)
+<<<<<<< Updated upstream
+=======
+library(dplyr)
+devtools::load_all()
+>>>>>>> Stashed changes
 ```
 
 # Load the data and add more info
@@ -80,8 +85,48 @@ species.data <- subset(region.data, year >= start.year)
 # Assign the CV folds from here; the EFH project used the RACE code to assign seed
 set.seed(10110)
 
+#if we want random folds
 random.folds <- rep(LETTERS[1:10], length.out = nrow(species.data))
-species.data$Folds <- sample(random.folds, size = nrow(species.data), replace = F)
+species.data$random_folds <- sample(random.folds, size = nrow(species.data), replace = F)
+
+#if we want spatial folds using blockCV
+# ===================================================================
+# --- SPATIAL BLOCK FOLD ASSIGNMENT (blockCV) ---
+# ===================================================================
+
+# 1. Convert species.data to sf spatial object using EPSG:3338
+data_sf <- sf::st_as_sf(species.data, coords = c("lon", "lat"), crs = 3338)
+
+# 2. Run blockCV to generate 50 km spatial blocks
+sb <- blockCV::cv_spatial(
+  x = data_sf,
+  k = 10,                  # Number of folds
+  size = 50000,           # 50,000 meters = 50 km
+  hexagon = FALSE,
+  selection = "random",
+  iteration = 100,
+  progress = FALSE
+)
+
+# 3. Extract block polygons and assign fold IDs positionally (prevents duplicate rows)
+blocks_poly <- sb$blocks
+block_intersects <- sf::st_intersects(data_sf, blocks_poly)
+
+# Assign fold IDs to a new/overwritten 'Folds' column
+species.data$Folds <- sapply(block_intersects, function(x) {
+  if (length(x) > 0) blocks_poly$folds[x[1]] else NA
+})
+
+# 4. Assign boundary points (if any fell slightly outside blocks) to nearest fold
+if (any(is.na(species.data$Folds))) {
+  na_idx <- which(is.na(species.data$Folds))
+  nearest_idx <- sf::st_nearest_feature(data_sf[na_idx, ], blocks_poly)
+  species.data$Folds[na_idx] <- blocks_poly$folds[nearest_idx]
+}
+
+# Quick check on fold counts
+table(species.data$Folds)
+
 
 # a good start is to map the presence data
 hd <- stats::quantile(species.data[species.data[, species] > 0, species], .9)
@@ -138,11 +183,25 @@ maxnet.abund <- MakeMaxEntAbundance(
   scale.fac = maxnet.scale, type = "cloglog"
 )
 
+<<<<<<< Updated upstream
 # Now cross-validate and get fit metrics
 maxnet.cv <- CrossValidateModel(
   model = maxnet.model, data = species.data, species = species, group = "Folds",
   model.type = "maxnet", key = "hauljoin", scale.preds = T, regmult = 1
+=======
+Now cross-validate and get fit metrics
+maxnet.cv <- CrossValidateModel(
+  model = maxnet.model,
+  data = species.data,
+  species = species,
+  group = "Folds",
+  model.type = "maxnet",
+  key = "hauljoin",
+  scale.preds = T,
+  regmult = 1
+>>>>>>> Stashed changes
 )
+
 maxnet.errors <- maxnet.cv[[1]]
 maxnet.cv.models <- maxnet.cv[[2]]
 
@@ -175,12 +234,38 @@ cloglog.abund <- MakeGAMAbundance(
   filename = ""
 )
 
+<<<<<<< Updated upstream
 cloglog.cv <- CrossValidateModel(
   model = cloglog.model, model.type = "cloglog", data = species.data, scale.preds = T,
   species = species, group = "Folds", key = "hauljoin"
 )
 cloglog.errors <- cloglog.cv[[1]]
 cloglog.cv.models <- cloglog.cv[[2]]
+=======
+cloglog.cv1 <- CrossValidateModel(
+  model = cloglog.model, 
+  model.type = "cloglog", 
+  data = species.data, 
+  scale.preds = T,
+  species = species, 
+  group = "random_folds", 
+  key = "hauljoin"
+)
+
+cloglog.cv2 <- CrossValidateModel(
+  model = cloglog.model, 
+  model.type = "cloglog", 
+  data = species.data, 
+  scale.preds = T,
+  species = species, 
+  group = "Folds", 
+  key = "hauljoin"
+)
+
+#CV random
+cloglog.errors <- cloglog.cv1[[1]]
+cloglog.cv.models <- cloglog.cv1[[2]]
+>>>>>>> Stashed changes
 
 cloglog.effects <- GetGAMEffects(
   model = cloglog.model, data = species.data, vars = "all", scale = "log",
