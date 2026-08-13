@@ -23,7 +23,6 @@ This is an example vignette for the EFHSDM package. It provides an simplified ex
 library(EFHSDM)
 library(akgfmaps)
 library(dplyr)
-devtools::load_all()
 ```
 
 # Load the data and add more info
@@ -180,7 +179,7 @@ maxnet.abund <- MakeMaxEntAbundance(
   scale.fac = maxnet.scale, type = "cloglog"
 )
 
-Now cross-validate and get fit metrics
+# Now cross-validate and get fit metrics
 maxnet.cv <- CrossValidateModel(
   model = maxnet.model,
   data = species.data,
@@ -301,6 +300,19 @@ compare_effect_curves <- function(effects1, effects2, cov_name, model1_label = "
 compare_effect_curves(cloglog.effects, cloglog.effects2, "bdepth", "Baseline GAM", "Spatial CV GAM")
 
 
+
+#continue for normal line
+cloglog.cv <- cloglog.cv2
+#CV random
+cloglog.errors <- cloglog.cv[[1]]
+cloglog.cv.models <- cloglog.cv[[2]]
+
+cloglog.effects <- GetGAMEffects(
+  model = cloglog.model, data = species.data, vars = "all", scale = "log",
+  cv.model.list = cloglog.cv.models, scale.factor = cloglog.scale
+)
+
+cloglog.rmse <- RMSE(pred = cloglog.errors$cvpred, obs = cloglog.errors$abund)
 
 ```
 

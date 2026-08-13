@@ -5,21 +5,21 @@ library(EFHSDM)
 library(magrittr)
 library(maxnet)
 
-masterplan<-utils::read.csv("Y:/RACE_EFH_variables/masterplan.csv")
+masterplan<-utils::read.csv("M:/HCD/shared_hcd_projects/2028 EFH SDM/masterplan.csv")
 #computer.name <- "JHLaptop"
 region <- F
 
 # Use this to specify a particular species or subset of species and some other control parameters
 # set species.vec and region.vec to NA in order to run everything
-species.vec <- "dogfish"                              # use the column abbreviations to select specific species
-region.vec <- "GOA"
+species.vec <- NA #"dogfish"                              # use the column abbreviations to select specific species
+region.vec <- NA #"GOA"
 stop.early <- T                                                  # useful if you want to stop and check results
 update.table <- T
 rerun <- T
 make.ensemble <- T
 group.var <- "Folds"                       #Do you want to group by spatial zone or random fold
 
-EFH.path <- "M:/HCD/shared_hcd_projects/2028 EFH SDM/2028_Covariates/"
+EFH.path <- "M:/HCD/shared_hcd_projects/2028 EFH SDM/"
 
 # set of nicer names to be used in figure labels
 # Use name for most figures, but use name2 for deviance tables
@@ -81,52 +81,9 @@ while(done==F){
     if(region0!=region){
       region<-region0
 
-      # (network location is \\akc0ss-n086/SEA_Programs/RACE_EFH_variables)
-      bathy <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Bathy"))
-      slope <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Slope"))
-      tmax <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Tmax"))
-      btemp <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Btemp"))
-      btemp<-raster::crop(x = btemp, y=bathy)
-      BPI <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/BPI"))
-      BPI<-raster::crop(x = BPI, y = bathy)
-      Curve <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Curve_Mean"))
-      AspectE <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Aspect_East"))
-      AspectN <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Aspect_North"))
+      raster.stack <- terra::rast(paste0(EFH.path, "2028_Covariates/", region, "/covariate_raster_stack_", region, ".tiff"))
 
-      lat <- raster::init(bathy, v ='y')
-      lat <- raster::mask(lat, bathy,overwrite = F)
-      lon <- raster::init(bathy, v ='x')
-      lon <- raster::mask(lon, bathy,overwrite = F)
-      coral <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Coralfactor"))
-      sponge <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Spongefactor"))
-      whips <- raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/Whipsfactor"))
-
-      east <- raster::raster(paste0(EFH.path,"/Variables/Variables_", region,"_1km/ROMSbcurrentEastings"))
-      north <- raster::raster(paste0(EFH.path,"/Variables/Variables_", region,"_1km/ROMSbcurrentNorthings"))
-      eastSD <- raster::raster(paste0(EFH.path,"/Variables/Variables_", region,"_1km/ROMSbEastingsSD"))
-      northSD <- raster::raster(paste0(EFH.path,"/Variables/Variables_", region,"_1km/ROMSbNorthingsSD"))
-      if(region == "EBS"){
-        phi <- raster::raster(paste0(EFH.path,"/Variables/Variables_EBS_1km/phi"))
-
-        raster.stack <- raster::stack(lon, lat, bathy, slope,AspectE,AspectN,Curve,btemp,east,north,eastSD,northSD,tmax,phi,BPI, sponge, coral, whips)
-        names(raster.stack) <- c("lon","lat","bdepth","slope","aspectE","aspectN","curve","btemp","bcurrentU","bcurrentV",
-                                 "bcurrentUSD","bcurrentVSD", "tmax","phi","BPI","sponge","coral","pen")
-      }
-      # GOA and AI don't have sediment grabs to calculate phi, so there is a "rockiness" variable instead
-      if(region%in%c("AI","GOA")){
-        rocky<-raster::raster(paste0(EFH.path,"/Variables/Variables_",region,"_1km/rocky"))
-
-        raster.stack <- raster::stack(lon,lat,bathy,slope,AspectE,AspectN,Curve,btemp,east,north,eastSD,northSD,tmax,rocky,BPI, sponge, coral, whips)
-        names(raster.stack) <- c("lon","lat","bdepth","slope","aspectE","aspectN","curve","btemp","bcurrentU","bcurrentV",
-                                 "bcurrentUSD","bcurrentVSD", "tmax","rocky","BPI","sponge","coral","pen")
-      }
-
-      ak.raster<-raster::raster(paste0(EFH.path,"/Variables/",region,"_Alaska_raster"))
-
-      if(region=="GOA"){
-        GOA.mask<-raster::raster(paste0(EFH.path,"/Variables/GOA_mask_raster"))
-        raster.stack<-raster::mask(raster.stack,GOA.mask)
-      }
+      # ak.raster<-raster::raster(paste0(EFH.path,"/Variables/",region,"_Alaska_raster"))
 
       # these are sizes for png files for various figures
       png.width <- 8
