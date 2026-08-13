@@ -233,7 +233,8 @@ while(done==F){
             mean(exp(stats::predict(maxnet.model0,newdata=species.data,type="link")+maxnet.model0$ent))
           maxnet.abund.list[[r]]<-MakeMaxEntAbundance(model = maxnet.model0,maxent.stack = raster.stack,
                                                       scale.fac = maxnet.scale.vec[r],type = "cloglog",
-                                                      land = ak.raster,filename = "")
+                                                      # land = ak.raster,
+                                                      filename = "")
 
           maxnet.abund.check0[r]<-raster::cellStats(maxnet.abund.list[[r]],max)<(max(species.data[,s])*10)
         }
@@ -310,7 +311,8 @@ while(done==F){
         cloglog.converge<-T
         cloglog.scale<-mean(species.data[,s])/mean(exp(predict(cloglog.model,type="link")))
         cloglog.abund<-MakeGAMAbundance(model = cloglog.model,r.stack = raster.stack,scale.factor = cloglog.scale,
-                                        land = ak.raster,filename = "")
+                                        # land = ak.raster,
+                                        filename = "")
 
         cloglog.abund.check<-raster::cellStats(cloglog.abund,max)<(max(species.data[,s])*10)
       }else{
@@ -329,7 +331,8 @@ while(done==F){
         if(cloglog.converge){
           cloglog.scale<-mean(species.data[,s])/mean(exp(predict(cloglog.model,type="link")))
           cloglog.abund<-MakeGAMAbundance(model = cloglog.model,r.stack = raster.stack,scale.factor = cloglog.scale,
-                                          land = ak.raster,filename = "")
+                                          # land = ak.raster,
+                                          filename = "")
           cloglog.abund.check<-raster::cellStats(cloglog.abund,max)<(max(species.data[,s])*10)
 
         }else{
@@ -377,7 +380,8 @@ while(done==F){
       if(hpoisson.converge){
         hpoisson.scale<-mean(species.data[,s])/mean(predict(hpoisson.model,type="response"))
         hpoisson.abund<-MakeGAMAbundance(model = hpoisson.model,r.stack = raster.stack,scale.factor = hpoisson.scale,
-                                         land = ak.raster,filename = "")
+                                         # land = ak.raster,
+                                         filename = "")
 
         hpoisson.abund.check<-raster::cellStats(hpoisson.abund,max)<(max(species.data[,s])*10)
       }else{
@@ -396,7 +400,8 @@ while(done==F){
         if(hpoisson.converge){
           hpoisson.scale<-mean(species.data[,s])/mean(predict(hpoisson.model,type="response"))
           hpoisson.abund<-MakeGAMAbundance(model = hpoisson.model,r.stack = raster.stack,scale.factor = hpoisson.scale,
-                                           land = ak.raster,filename = "")
+                                           # land = ak.raster,
+                                           filename = "")
           hpoisson.abund.check<-raster::cellStats(hpoisson.abund,max)<(max(species.data[,s])*10)
 
         }
@@ -443,7 +448,8 @@ while(done==F){
       if(poisson.converge){
         poisson.scale<-mean(species.data[,s])/mean(predict(poisson.model,type="response"))
         poisson.abund<-MakeGAMAbundance(model = poisson.model,r.stack = raster.stack,scale.factor = poisson.scale,
-                                        land = ak.raster,filename = "")
+                                        # land = ak.raster,
+                                        filename = "")
 
         poisson.abund.check<-raster::cellStats(poisson.abund,max)<(max(species.data[,s])*10)
       }else{
@@ -462,7 +468,8 @@ while(done==F){
         if(poisson.converge){
           poisson.scale<-mean(species.data[,s])/mean(predict(poisson.model,type="response"))
           poisson.abund<-MakeGAMAbundance(model = poisson.model,r.stack = raster.stack,scale.factor = poisson.scale,
-                                          land = ak.raster,filename = "")
+                                          # land = ak.raster,
+                                          filename = "")
           poisson.abund.check<-raster::cellStats(poisson.abund,max)<(max(species.data[,s])*10)
 
         }
@@ -507,7 +514,8 @@ while(done==F){
         negbin.converge<-T
         negbin.scale<-mean(species.data[,s])/mean(predict(negbin.model,type="response"))
         negbin.abund<-MakeGAMAbundance(model = negbin.model,r.stack = raster.stack,scale.factor = negbin.scale,
-                                       land = ak.raster,filename = "")
+                                       # land = ak.raster,
+                                       filename = "")
 
         negbin.abund.check<-raster::cellStats(negbin.abund,max)<(max(species.data[,s])*10)
       }else{
@@ -525,7 +533,8 @@ while(done==F){
         if(negbin.converge){
           negbin.scale<-mean(species.data[,s])/mean(predict(negbin.model,type="response"))
           negbin.abund<-MakeGAMAbundance(model = negbin.model,r.stack = raster.stack,scale.factor = negbin.scale,
-                                         land = ak.raster,filename = "")
+                                         # land = ak.raster,
+                                         filename = "")
           negbin.abund.check<-raster::cellStats(negbin.abund,max)<(max(species.data[,s])*10)
 
         }
