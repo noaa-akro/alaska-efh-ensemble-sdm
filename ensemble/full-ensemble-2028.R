@@ -6,7 +6,7 @@ library(magrittr)
 library(maxnet)
 
 masterplan<-utils::read.csv("M:/HCD/shared_hcd_projects/2028 EFH SDM/masterplan.csv")
-#computer.name <- "JHLaptop"
+computer.name <- "MYlaptop"
 region <- F
 
 # Use this to specify a particular species or subset of species and some other control parameters
@@ -90,12 +90,13 @@ while(done==F){
       png.height <- ifelse(region == "EBS", 8, 3.5)
 
       # Load the data
-      region.data <- utils::read.csv(paste0(EFH.path, "/Trawl_Models2/", region, "/all_", region, "_data_2021.csv"))
+      #region.data <- utils::read.csv(paste0(EFH.path, "/Trawl_Models2/", region, "/all_", region, "_data_2021.csv"))
+      region.data <- readRDS(here::here("data", paste0("all_", region, "_data_1993_2025.rds")))
 
       # small adjustment for the REBS complex & dogfish
-      region.data$j_rebs <- region.data$j_rebs + region.data$j_rough + region.data$j_bspot
-      region.data$a_rebs <- region.data$a_rebs + region.data$a_rough + region.data$a_bspot
-      region.data$dogfish <- region.data$j_dogfish + region.data$a_dogfish
+      #region.data$j_rebs <- region.data$j_rebs + region.data$j_rough + region.data$j_bspot
+      #region.data$a_rebs <- region.data$a_rebs + region.data$a_rough + region.data$a_bspot
+      #region.data$dogfish <- region.data$j_dogfish + region.data$a_dogfish
 
       # FOr now, we will leave the weights of the SFIs in the data set, but we are using it as a binary variable for the analysis
       region.data$sponge <-as.factor(as.integer(region.data$sponge > 0))
@@ -105,9 +106,10 @@ while(done==F){
       region.data$logarea <- log(region.data$area)
     }
 
-    species.data0 <- subset(region.data,year>=masterplan$Start_Year[i])
+    start.year <- 1993
+    species.data0 <- subset(region.data, year>=start.year)
 
-    species.path <- paste0(EFH.path,"/Trawl_Models2/",region,"/",
+    species.path <- paste0(EFH.path,"Trawl_Models2/",region,"/",
                            paste(strsplit(masterplan$File_name[i],"_")[[1]][2:3],collapse="_"))
 
 
@@ -166,24 +168,24 @@ while(done==F){
         maxnet.covars<-c("bcurrentU","bcurrentV","bcurrentUSD","bcurrentVSD","bdepth",
                          "slope","aspectE","aspectN","curve","btemp","tmax","phi","BPI")
       }else{
-        covars<-c("bdepth","slope","aspectE","aspectN","curve","btemp","tmax","rocky","BPI")
+        covars<-c("bdepth","slope","aspectE","aspectN","curve","btemp","tmax","phi", "rocky","BPI")
         maxnet.covars<-c("bcurrentU","bcurrentV","bcurrentUSD","bcurrentVSD","bdepth",
-                         "slope","aspectE","aspectN","curve","btemp","tmax","rocky","BPI")
+                         "slope","aspectE","aspectN","curve","btemp","tmax","phi","rocky","BPI")
       }
       cofactors<-c("sponge","coral","pen")
       maxnet2d<-list(c("bcurrentU","bcurrentV"),c("bcurrentUSD","bcurrentVSD"))
 
       # Now can start running the models
       start.time<-Sys.time()
-      dir.create(species.path)
+      dir.create(species.path, recursive = T)
 
       hd <- quantile(species.data[species.data[,s]>0,s],probs=.9)
 
-      grDevices::png(paste0(species.path,"/dotplot.png"),width = png.width,height = png.height,res=300,units = "in")
+      grDevices::png(paste0(species.path,"/dotplot.png"), width = png.width, height = png.height,res=300, units = "in")
       print(MakeAKGFDotplot(presence = species.data[species.data[,s]>0,],
                             absence = species.data[species.data[,s]==0,],
                             highdensity = species.data[species.data[,s]>hd,],
-                            region = tolower(region),dataCRS = raster.stack@crs,
+                            region = tolower(region), dataCRS = crs(raster.stack),
                             title.name = figure.name))
       grDevices::dev.off()
 
@@ -236,7 +238,7 @@ while(done==F){
                                                       # land = ak.raster,
                                                       filename = "")
 
-          maxnet.abund.check0[r]<-raster::cellStats(maxnet.abund.list[[r]],max)<(max(species.data[,s])*10)
+          maxnet.abund.check0[r]<-terra::global(maxnet.abund.list[[r]],max, na.rm = T)<(max(species.data[,s])*10)
         }
 
         # if it converges, do the checks and crossvalidation
@@ -275,7 +277,7 @@ while(done==F){
         maxnet.model<-maxnet.model.list[[which.min(maxnet.rmse0)]]
         maxnet.abund<-maxnet.abund.list[[which.min(maxnet.rmse0)]]
 
-        raster::writeRaster(maxnet.abund,filename = paste0(species.path,"/maxnet_abundance"),overwrite=T)
+        terra::writeRaster(maxnet.abund,filename = paste0(species.path,"/maxnet_abundance.tiff"),overwrite=T)
 
         maxnet.cv.models<-maxnet.cv.model.list[[which.min(maxnet.rmse0)]]
         maxnet.errors<-maxnet.error.list[[which.min(maxnet.rmse0)]]
@@ -314,7 +316,7 @@ while(done==F){
                                         # land = ak.raster,
                                         filename = "")
 
-        cloglog.abund.check<-raster::cellStats(cloglog.abund,max)<(max(species.data[,s])*10)
+        cloglog.abund.check<-terra::global(cloglog.abund,max, na.rm = T)<(max(species.data[,s])*10)
       }else{
         cloglog.abund.check<-F
       }
@@ -333,7 +335,7 @@ while(done==F){
           cloglog.abund<-MakeGAMAbundance(model = cloglog.model,r.stack = raster.stack,scale.factor = cloglog.scale,
                                           # land = ak.raster,
                                           filename = "")
-          cloglog.abund.check<-raster::cellStats(cloglog.abund,max)<(max(species.data[,s])*10)
+          cloglog.abund.check<-terra::global(cloglog.abund,max, na.rm = T)<(max(species.data[,s])*10)
 
         }else{
           cloglog.converge<-F
@@ -352,7 +354,7 @@ while(done==F){
         cloglog.errors<-cloglog.cv[[1]]
         cloglog.cv.models<-cloglog.cv[[2]]
 
-        raster::writeRaster(cloglog.abund,paste0(species.path,"/cloglog_abundance"),overwrite=T)
+        terra::writeRaster(cloglog.abund,paste0(species.path,"/cloglog_abundance.tiff"),overwrite=T)
 
         cloglog.effects<-GetGAMEffects(model = cloglog.model,data = species.data,vars = "all",scale = "log",
                                        cv.model.list = cloglog.cv.models,scale.factor = cloglog.scale)
@@ -383,7 +385,7 @@ while(done==F){
                                          # land = ak.raster,
                                          filename = "")
 
-        hpoisson.abund.check<-raster::cellStats(hpoisson.abund,max)<(max(species.data[,s])*10)
+        hpoisson.abund.check<-terra::global(hpoisson.abund,max, na.rm = T)<(max(species.data[,s])*10)
       }else{
         hpoisson.abund.check<-F
       }
@@ -402,7 +404,7 @@ while(done==F){
           hpoisson.abund<-MakeGAMAbundance(model = hpoisson.model,r.stack = raster.stack,scale.factor = hpoisson.scale,
                                            # land = ak.raster,
                                            filename = "")
-          hpoisson.abund.check<-raster::cellStats(hpoisson.abund,max)<(max(species.data[,s])*10)
+          hpoisson.abund.check<-terra::global(hpoisson.abund,max, na.rm = T)<(max(species.data[,s])*10)
 
         }
       }
@@ -419,7 +421,7 @@ while(done==F){
         hpoisson.errors<-hpoisson.cv[[1]]
         hpoisson.cv.models<-hpoisson.cv[[2]]
 
-        raster::writeRaster(hpoisson.abund,paste0(species.path,"/hpoisson_abundance"),overwrite=T)
+        terra::writeRaster(hpoisson.abund,paste0(species.path,"/hpoisson_abundance.tiff"),overwrite=T)
 
         hpoisson.effects<-GetGAMEffects(model = hpoisson.model,data=species.data,cv.model.list = hpoisson.cv.models,
                                         scale.factor = hpoisson.scale,vars = "all",scale = "log")
@@ -451,7 +453,7 @@ while(done==F){
                                         # land = ak.raster,
                                         filename = "")
 
-        poisson.abund.check<-raster::cellStats(poisson.abund,max)<(max(species.data[,s])*10)
+        poisson.abund.check<-terra::global(poisson.abund,max, na.rm = T)<(max(species.data[,s])*10)
       }else{
         poisson.abund.check<-F
       }
@@ -470,7 +472,7 @@ while(done==F){
           poisson.abund<-MakeGAMAbundance(model = poisson.model,r.stack = raster.stack,scale.factor = poisson.scale,
                                           # land = ak.raster,
                                           filename = "")
-          poisson.abund.check<-raster::cellStats(poisson.abund,max)<(max(species.data[,s])*10)
+          poisson.abund.check<-terra::global(poisson.abund,max, na.rm = T)<(max(species.data[,s])*10)
 
         }
       }
@@ -486,7 +488,7 @@ while(done==F){
         poisson.errors<-poisson.cv[[1]]
         poisson.cv.models<-poisson.cv[[2]]
 
-        raster::writeRaster(poisson.abund,paste0(species.path,"/poisson_abundance"),overwrite=T)
+        terra::writeRaster(poisson.abund,paste0(species.path,"/poisson_abundance.tiff"),overwrite=T)
 
         poisson.effects<-GetGAMEffects(model = poisson.model,data = species.data,vars = "all",scale = "log",
                                        cv.model.list = poisson.cv.models,scale.factor = poisson.scale)
@@ -517,7 +519,7 @@ while(done==F){
                                        # land = ak.raster,
                                        filename = "")
 
-        negbin.abund.check<-raster::cellStats(negbin.abund,max)<(max(species.data[,s])*10)
+        negbin.abund.check<-terra::global(negbin.abund,max)<(max(species.data[,s])*10)
       }else{
         negbin.abund.check<-F
       }
@@ -535,7 +537,7 @@ while(done==F){
           negbin.abund<-MakeGAMAbundance(model = negbin.model,r.stack = raster.stack,scale.factor = negbin.scale,
                                          # land = ak.raster,
                                          filename = "")
-          negbin.abund.check<-raster::cellStats(negbin.abund,max)<(max(species.data[,s])*10)
+          negbin.abund.check<-terra::global(negbin.abund,max, na.rm =T)<(max(species.data[,s])*10)
 
         }
       }
@@ -553,7 +555,7 @@ while(done==F){
         negbin.errors<-negbin.cv[[1]]
         negbin.cv.models<-negbin.cv[[2]]
 
-        raster::writeRaster(negbin.abund,paste0(species.path,"/negbin_abundance"),overwrite=T)
+        terra::writeRaster(negbin.abund,paste0(species.path,"/negbin_abundance.tiff"),overwrite=T)
 
         negbin.effects<-GetGAMEffects(model = negbin.model,data = species.data,vars = "all",scale = "log",
                                       cv.model.list = negbin.cv.models,scale.factor = negbin.scale)
@@ -672,18 +674,19 @@ while(done==F){
           m.breaks<-FindEFHbreaks(abund.raster = abund.list[[m]],method = "percentile",threshold=.0513,
                                   quantiles = c(.05,.25,.5,.75))
           model.breaks[m]<-m.breaks[2]
-          efh.list[[m]] <- raster::cut(abund.list[[m]], breaks = m.breaks, overwrite = TRUE,
-                                       filename = paste0(species.path,"/",model.name,"_efh"))
+          efh.list[[m]] <- terra::classify(abund.list[[m]], rcl = m.breaks, overwrite = TRUE,
+                                       filename = paste0(species.path,"/",model.name,"_efh.tiff"))
 
-          area.vec[m]<-sum(raster::getValues(efh.list[[m]])>1,na.rm=T)
+          area.vec[m]<-sum(terra::values(efh.list[[m]])>1,na.rm=T)
           names(area.vec)[m]<-model.name
 
           var.list[[m]]<-MakeVarianceRasters(model.list = cv.model.list[[m]],raster.stack = raster.stack,
                                              model.type = model.types[m],scale.factor = model.scales[m])
-          raster::writeRaster(x = var.list[[m]],filename = paste0(species.path,"/",model.name,"_abund_variance"),overwrite=T)
+          terra::writeRaster(x = var.list[[m]],filename = paste0(species.path,"/",model.name,"_abund_variance.tiff"),overwrite=T)
 
           # quick plot of cv
-          cv.raster<-sqrt(var.list[[m]])/(abund.list[[m]]+raster::cellStats(abund.list[[m]],max)*.01)
+          max_val <- as.numeric(terra::global(abund.list[[m]], "max", na.rm = TRUE))
+          cv.raster<-sqrt(var.list[[m]])/(abund.list[[m]]+max_val*.01)
 
           grDevices::png(filename = paste0(species.path,"/",model.name,"_abund_cv.png"),width = png.width,height = png.height,res=600,units="in")
           print(MakeAKGFDensityplot(region = tolower(region),density.map = cv.raster,buffer = .98,
@@ -712,7 +715,7 @@ while(done==F){
 
           # Effects plot
           eff.plot.list<-Effectsplot(effects.list=effects.list[[m]],nice.names = nice.names,vars = good.terms,
-                                     region=tolower(region),crs=raster.stack@crs)
+                                     region=tolower(region),crs=crs(raster.stack))
 
           grDevices::png(filename = paste0(species.path,"/",model.name,"_effects.png"),width = 6,height = 6,units = "in",res = 600)
           gridExtra::grid.arrange(nrow=3,ncol=3,grobs=eff.plot.list)
@@ -749,9 +752,9 @@ while(done==F){
                                             filename = paste0(species.path,"/ensemble_abundance"))
       ensemble.breaks<-FindEFHbreaks(abund.raster = ensemble.abund,method = "percentile",threshold = .0513,
                                      data = species.data,quantiles = c(.05,.25,.5,.75))
-      ensemble.efh<-raster::cut(ensemble.abund, breaks = ensemble.breaks, overwrite = TRUE,
-                                filename = paste0(species.path,"/ensemble_efh"))
-      area.vec<-c(area.vec,ensemble=sum(raster::getValues(ensemble.efh)>1,na.rm=T))
+      ensemble.efh<-terra::classify(ensemble.abund, rcl = ensemble.breaks, overwrite = TRUE,
+                                filename = paste0(species.path,"/ensemble_efh.tiff"))
+      area.vec<-c(area.vec,ensemble=sum(terra::values(ensemble.efh)>1,na.rm=T))
 
       model.breaks<-c(model.breaks,ensemble=ensemble.breaks[2])
 
@@ -786,7 +789,7 @@ while(done==F){
 
       en.eff<-GetEnsembleEffects(effects.list = effects.list,model.weights = model.weights,
                                  vars = "all",scale = "log")
-      ensemble.effects.plots<-Effectsplot(effects.list = en.eff,region = tolower(region),crs = raster.stack@crs,
+      ensemble.effects.plots<-Effectsplot(effects.list = en.eff,region = tolower(region),crs = crs(raster.stack),
                                           nice.names = nice.names,vars = good.terms)
       grDevices::png(filename = paste0(species.path,"/ensemble_effects.png"),
                      width = 8,height = 10,units = "in",res = 600)
@@ -822,9 +825,9 @@ while(done==F){
       #ensemble variance
       ensemble.var<-GetEnsembleVariance(model.weights = model.weights,variance.list = var.list,abund.list = abund.list,
                                         ensemble.abund = ensemble.abund)
-      raster::writeRaster(x = ensemble.var,filename = paste0(species.path,"/ensemble_variance"),overwrite=T)
+      terra::writeRaster(x = ensemble.var,filename = paste0(species.path,"/ensemble_variance.tiff"),overwrite=T)
 
-      ensemble.cv.raster<-sqrt(ensemble.var)/(ensemble.abund+raster::cellStats(ensemble.abund,max)*.01)
+      ensemble.cv.raster<-sqrt(ensemble.var)/(ensemble.abund+terra::global(ensemble.abund,max, na.rm = T)*.01)
 
       grDevices::png(filename = paste0(species.path,"/ensemble_cv.png"),width = png.width,height = png.height,res=600,units="in")
       print(MakeAKGFDensityplot(region = tolower(region),density.map = ensemble.cv.raster,buffer = .98,
