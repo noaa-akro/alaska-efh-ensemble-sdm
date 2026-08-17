@@ -21,22 +21,22 @@ MakeDevianceTable<-function(model.names=NULL,
 
 
 
-  if(is.null(model.weights)||is.na(model.weights)){
+  if(is.null(model.weights)||any(is.na(model.weights))){
     good.models<-1:length(dev.list)
   }else{
     good.models<-which(model.weights>0)
   }
-  if(is.null(model.names)||is.na(model.names)){
+  if(is.null(model.names)||any(is.na(model.names))){
     model.names<-paste0("Model ",1:length(dev.list))
   }
   good.names<-model.names[good.models]
 
   columns<-"Model"
-  if(is.null(model.types)==F&&is.na(model.types)==F){
+  if(is.null(model.types)==F&& !any(is.na(model.types))){
     t.col<-2
     columns<-c(columns,"Type")
   }
-  if(is.null(model.weights)==F &&is.na(model.weights)==F){
+  if(is.null(model.weights)==F &&!any(is.na(model.weights))){
     w.col<-length(columns)+1
     columns<-c(columns,"Weight")
   }
@@ -72,7 +72,7 @@ MakeDevianceTable<-function(model.names=NULL,
     for(t in 1:n.terms){
       term<-dev.names[t]
       d.term<-which(names(model.dev)==term)
-      if(length(d.term>0)){
+      if(length(d.term)>0){
         dtable[(1+d),term.col[t]]<-round(model.dev[d.term],1)
       }else{
         dtable[(1+d),term.col[t]]<-"--"

@@ -12,8 +12,8 @@ region <- "AI"
 
 # Use this to specify a particular species or subset of species and some other control parameters
 # set species.vec and region.vec to NA in order to run everything
-species.vec <- NA #dogfish"                              # use the column abbreviations to select specific species
-region.vec <- NA #"GOA"
+species.vec <- "ej_atf" #dogfish"                              # use the column abbreviations to select specific species
+region.vec <- "AI" #"GOA"
 stop.early <- T                                                  # useful if you want to stop and check results
 update.table <- T
 rerun <- T
@@ -524,7 +524,7 @@ while(done==F){
                                        # land = ak.raster,
                                        filename = "")
 
-        negbin.abund.check<-terra::global(negbin.abund,max)<(max(species.data[,s])*10)
+        negbin.abund.check<-terra::global(negbin.abund,max, na.rm = T)<(max(species.data[,s])*10)
       }else{
         negbin.abund.check<-F
       }
@@ -719,7 +719,7 @@ while(done==F){
           grDevices::dev.off()
 
           # Effects plot
-          eff.plot.list<-Effectsplot(effects.list=effects.list[[m]],nice.names = nice.names,vars = good.terms,
+          eff.plot.list <- Effectsplot(effects.list=effects.list[[m]],nice.names = nice.names, vars = good.terms,
                                      region=tolower(region),crs=terra::crs(raster.stack))
 
           grDevices::png(filename = paste0(species.path,"/",model.name,"_effects.png"),width = 6,height = 6,units = "in",res = 600)
@@ -754,7 +754,7 @@ while(done==F){
       print("Constructing the ensemble")
       # now make the actual ensemble
       ensemble.abund<-MakeEnsembleAbundance(model.weights=model.weights,abund.list = abund.list,
-                                            filename = paste0(species.path,"/ensemble_abundance"))
+                                            filename = paste0(species.path,"/ensemble_abundance.tiff"))
       ensemble.breaks<-FindEFHbreaks(abund.raster = ensemble.abund,method = "percentile",threshold = .0513,
                                      data = species.data,quantiles = c(.05,.25,.5,.75))
       ensemble.efh<-terra::classify(ensemble.abund, rcl = ensemble.breaks, overwrite = TRUE,
@@ -830,9 +830,11 @@ while(done==F){
       #ensemble variance
       ensemble.var<-GetEnsembleVariance(model.weights = model.weights,variance.list = var.list,abund.list = abund.list,
                                         ensemble.abund = ensemble.abund)
-      terra::writeRaster(x = ensemble.var,filename = paste0(species.path,"/ensemble_variance.tiff"),overwrite=T)
+      terra::writeRaster(x = ensemble.var,filename = paste0(species.path,"/ensemble_variance.tiff"), overwrite=T)
 
-      ensemble.cv.raster<-sqrt(ensemble.var)/(ensemble.abund+terra::global(ensemble.abund,max, na.rm = T)*.01)
+      max_val <- as.numeric(terra::global(ensemble.abund, "max", na.rm = TRUE))
+
+      ensemble.cv.raster <- sqrt(ensemble.var) / (ensemble.abund + max_val * 0.01)
 
       grDevices::png(filename = paste0(species.path,"/ensemble_cv.png"),width = png.width,height = png.height,res=600,units="in")
       print(MakeAKGFDensityplot(region = tolower(region),density.map = ensemble.cv.raster,buffer = .98,

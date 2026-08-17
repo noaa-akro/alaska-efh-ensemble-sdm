@@ -16,10 +16,10 @@
 Effectsplot <- function(effects.list, region = NA, crs = NA, nice.names = NULL, vars = "all") {
 
   # check the variable names and restrict things to those requested
-  if (length(vars)>1 &&vars != "all" & is.character(vars)) {
+  if (length(vars) > 1 && !identical(vars, "all") && is.character(vars)) {
     vars2 <- which(names(effects.list) %in% vars)
   } else {
-    if (vars == "all") {
+    if (identical(vars, "all")) {
       vars2 <- 1:length(effects.list)
     } else {
       vars2 <- vars
@@ -27,7 +27,7 @@ Effectsplot <- function(effects.list, region = NA, crs = NA, nice.names = NULL, 
   }
 
   if (length(vars2) < length(vars)) {
-    missing <- vars[which(vars %in% names(effects.list) == F)]
+    missing <- vars[which(!vars %in% names(effects.list))]
     stop("Variables [", paste0(missing, collapse = ", "), "] not found in effects list")
   }
 
