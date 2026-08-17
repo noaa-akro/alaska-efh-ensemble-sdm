@@ -11,8 +11,8 @@ region <- F
 
 # Use this to specify a particular species or subset of species and some other control parameters
 # set species.vec and region.vec to NA in order to run everything
-species.vec <- NA #"dogfish"                              # use the column abbreviations to select specific species
-region.vec <- NA #"GOA"
+species.vec <- "ej_atf" #"dogfish"                              # use the column abbreviations to select specific species
+region.vec <- "AI" #"GOA"
 stop.early <- T                                                  # useful if you want to stop and check results
 update.table <- T
 rerun <- T
@@ -59,7 +59,8 @@ while(done==F){
   }else{
 
     # alternately, you can just set a value for i here to run a single species
-    i<-unclaimed[1]
+    #i<-unclaimed[1]
+    i <- species.vec[1]
     if(rerun){
       if(length(species.vec)>1 | length(region.vec)>1){stop("Rerun option can only accept one species at a time")}
       i=which(masterplan$Abbreviation==species.vec & masterplan$Region==region.vec)
@@ -99,8 +100,8 @@ while(done==F){
       #region.data$dogfish <- region.data$j_dogfish + region.data$a_dogfish
 
       # FOr now, we will leave the weights of the SFIs in the data set, but we are using it as a binary variable for the analysis
-      region.data$sponge <-as.factor(as.integer(region.data$sponge > 0))
-      region.data$coral <-  as.factor(as.integer(region.data$coral > 0))
+      region.data$sponge <- as.factor(as.integer(region.data$sponge > 0))
+      region.data$coral <- as.factor(as.integer(region.data$coral > 0))
       region.data$pen <- as.factor(as.integer(region.data$pen > 0))
 
       region.data$logarea <- log(region.data$area)
@@ -185,7 +186,7 @@ while(done==F){
       print(MakeAKGFDotplot(presence = species.data[species.data[,s]>0,],
                             absence = species.data[species.data[,s]==0,],
                             highdensity = species.data[species.data[,s]>hd,],
-                            region = tolower(region), dataCRS = crs(raster.stack),
+                            region = tolower(region), dataCRS = terra::crs(raster.stack),
                             title.name = figure.name))
       grDevices::dev.off()
 
@@ -381,7 +382,7 @@ while(done==F){
 
       if(hpoisson.converge){
         hpoisson.scale<-mean(species.data[,s])/mean(predict(hpoisson.model,type="response"))
-        hpoisson.abund<-MakeGAMAbundance(model = hpoisson.model,r.stack = raster.stack,scale.factor = hpoisson.scale,
+        hpoisson.abund<-MakeGAMAbundance(model = hpoisson.model, r.stack = raster.stack, scale.factor = hpoisson.scale,
                                          # land = ak.raster,
                                          filename = "")
 
@@ -715,7 +716,7 @@ while(done==F){
 
           # Effects plot
           eff.plot.list<-Effectsplot(effects.list=effects.list[[m]],nice.names = nice.names,vars = good.terms,
-                                     region=tolower(region),crs=crs(raster.stack))
+                                     region=tolower(region),crs=terra::crs(raster.stack))
 
           grDevices::png(filename = paste0(species.path,"/",model.name,"_effects.png"),width = 6,height = 6,units = "in",res = 600)
           gridExtra::grid.arrange(nrow=3,ncol=3,grobs=eff.plot.list)
@@ -789,7 +790,7 @@ while(done==F){
 
       en.eff<-GetEnsembleEffects(effects.list = effects.list,model.weights = model.weights,
                                  vars = "all",scale = "log")
-      ensemble.effects.plots<-Effectsplot(effects.list = en.eff,region = tolower(region),crs = crs(raster.stack),
+      ensemble.effects.plots<-Effectsplot(effects.list = en.eff,region = tolower(region),crs = terra::crs(raster.stack),
                                           nice.names = nice.names,vars = good.terms)
       grDevices::png(filename = paste0(species.path,"/ensemble_effects.png"),
                      width = 8,height = 10,units = "in",res = 600)
