@@ -4,15 +4,16 @@
 library(EFHSDM)
 library(magrittr)
 library(maxnet)
+library(terra)
 
 masterplan<-utils::read.csv("M:/HCD/shared_hcd_projects/2028 EFH SDM/masterplan.csv")
 computer.name <- "MYlaptop"
-region <- F
+region <- "AI"
 
 # Use this to specify a particular species or subset of species and some other control parameters
 # set species.vec and region.vec to NA in order to run everything
-species.vec <- "ej_atf" #"dogfish"                              # use the column abbreviations to select specific species
-region.vec <- "AI" #"GOA"
+species.vec <- NA #dogfish"                              # use the column abbreviations to select specific species
+region.vec <- NA #"GOA"
 stop.early <- T                                                  # useful if you want to stop and check results
 update.table <- T
 rerun <- T
@@ -60,7 +61,8 @@ while(done==F){
 
     # alternately, you can just set a value for i here to run a single species
     #i<-unclaimed[1]
-    i <- species.vec[1]
+   # i <- species.vec[1]
+    #i <- 1
     if(rerun){
       if(length(species.vec)>1 | length(region.vec)>1){stop("Rerun option can only accept one species at a time")}
       i=which(masterplan$Abbreviation==species.vec & masterplan$Region==region.vec)
@@ -83,7 +85,9 @@ while(done==F){
       region<-region0
 
       raster.stack <- terra::rast(paste0(EFH.path, "2028_Covariates/", region, "/covariate_raster_stack_", region, ".tiff"))
-
+      raster.stack$sponge <- terra::as.factor(raster.stack$sponge)
+      raster.stack$pen <- terra::as.factor(raster.stack$pen)
+      raster.stack$coral <- terra::as.factor(raster.stack$coral)
       # ak.raster<-raster::raster(paste0(EFH.path,"/Variables/",region,"_Alaska_raster"))
 
       # these are sizes for png files for various figures
@@ -427,10 +431,10 @@ while(done==F){
         hpoisson.effects<-GetGAMEffects(model = hpoisson.model,data=species.data,cv.model.list = hpoisson.cv.models,
                                         scale.factor = hpoisson.scale,vars = "all",scale = "log")
 
-        hpoisson.rmse<-max(c(RMSE(pred = hpoisson.errors$pred,obs = hpoisson.errors$abund),
+        hpoisson.rmse <- max(c(RMSE(pred = hpoisson.errors$pred,obs = hpoisson.errors$abund),
                              RMSE(pred = hpoisson.errors$cvpred,obs = hpoisson.errors$abund)))
 
-        hpoisson.success<-ifelse(any(is.na(hpoisson.errors$cvpred)),F,T)
+        hpoisson.success <- ifelse(any(is.na(hpoisson.errors$cvpred)),F,T)
 
         saveRDS(hpoisson.model,file=paste0(species.path,"/hpoisson_model.rds"))
         saveRDS(hpoisson.effects,file=paste0(species.path,"/hpoisson_effects.rds"))
