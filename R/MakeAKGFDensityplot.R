@@ -74,13 +74,17 @@ MakeAKGFDensityplot <- function(region,
   if (length(title.pos)<2){
     if(title.pos == "default") {
       if (region %in% c("ai", "ai.west", "ai.central", "ai.east")) {
-        title.pos <- c(-900000, 490000)
+        # title.pos <- c(-900000, 490000)
+        title.pos <- c(-2320000, 480000)
       }
       if (region %in% c("ebs", "bs.all", "bs.south", "sebs", "ecs", "ebs.ecs")) {
-        title.pos <- c(-550000, 800000)
+        #title.pos <- c(-550000, 800000)
+        title.pos <- c(-1400000, 1850000)
       }
       if (region %in% c("goa", "goa.west", "goa.east")) {
-        title.pos <- c(-1300000, 630000)
+        #title.pos <- c(-1300000, 630000)
+        title.pos <- c(-800000, 1300000)
+
       }
     }else{
       title.pos<-NA
@@ -163,12 +167,11 @@ MakeAKGFDensityplot <- function(region,
       legend.text = ggplot2::element_text(size = 12), legend.title = ggplot2::element_text(size = 12),
       plot.background = ggplot2::element_rect(fill = NA, color = NA)
     )
-
   # add a title
   if (is.na(title.name) == F && length(title.pos) == 2) {
     densityplot <- densityplot +
       ggplot2::geom_label(
-        data = data.frame(x = title.pos[1], y = title.pos[2], label = title.name),
+        data = data.frame(x = title.pos[1], y =title.pos[2], label = title.name),
         ggplot2::aes(x = x, y = y, label = label, hjust = 0, vjust = 1), size = 5
       )
   }

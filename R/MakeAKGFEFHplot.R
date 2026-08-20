@@ -74,14 +74,16 @@ MakeAKGFEFHplot <- function(region,
   if (length(title.pos)<2){
     if(title.pos == "default") {
       if (region %in% c("ai", "ai.west", "ai.central", "ai.east")) {
-        title.pos <- c(-900000, 490000)
+        # title.pos <- c(-900000, 490000)
+        title.pos <- c(-2320000, 480000)
       }
       if (region %in% c("ebs", "bs.all", "bs.south", "sebs", "ecs", "ebs.ecs")) {
-        title.pos <- c(-550000, 800000)
+        #title.pos <- c(-550000, 800000)
+        title.pos <- c(-1400000, 1850000)
       }
       if (region %in% c("goa", "goa.west", "goa.east")) {
-        title.pos <- c(-1300000, 630000)
-      }
+        #title.pos <- c(-1300000, 630000)
+        title.pos <- c(-800000, 1300000)      }
     }else{
       title.pos<-NA
     }
