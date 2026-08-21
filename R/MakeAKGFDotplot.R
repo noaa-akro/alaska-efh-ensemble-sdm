@@ -121,15 +121,24 @@ MakeAKGFDotplot <- function(presence,
     if(title.pos == "default") {
       if (region %in% c("ai", "ai.west", "ai.central", "ai.east")) {
        # title.pos <- c(-900000, 490000)
-        title.pos <- c(-2320000, 480000)
+        title.x <- MAP$plot.boundary$x[2] - (diff(MAP$plot.boundary$x) * 0.01)
+        title.y <- MAP$plot.boundary$y[2] - (diff(MAP$plot.boundary$y) * 0.02)
+        title_h <- 1 #right
+        title_v <- 1 #top
       }
       if (region %in% c("ebs", "bs.all", "bs.south", "sebs", "ecs", "ebs.ecs")) {
         #title.pos <- c(-550000, 800000)
-        title.pos <- c(-1400000, 1850000)
+        title.x <- MAP$plot.boundary$x[1] + (diff(MAP$plot.boundary$x) * 0.02)
+        title.y <- MAP$plot.boundary$y[2] - (diff(MAP$plot.boundary$y) * 0.02)
+        title_h <- 0 #left
+        title_v <- 1 #top
       }
       if (region %in% c("goa", "goa.west", "goa.east")) {
         #title.pos <- c(-1300000, 630000)
-        title.pos <- c(-800000, 1300000)
+        title.x <- MAP$plot.boundary$x[1] + (diff(MAP$plot.boundary$x) * 0.09)
+        title.y <- MAP$plot.boundary$y[2] - (diff(MAP$plot.boundary$y) * 0.02)
+        title_h <- 0 #left
+        title_v <- 1 #top
       }
     }else{
       title.pos<-NA
@@ -221,7 +230,7 @@ MakeAKGFDotplot <- function(presence,
 
   # add the themes
   dotplot <- dotplot +
-    ggplot2::coord_sf(xlim = MAP$plot.boundary$x + ext.adjust[1:2], ylim = MAP$plot.boundary$y + ext.adjust[3:4]) +
+    ggplot2::coord_sf(xlim = MAP$plot.boundary$x + ext.adjust[1:2], ylim = MAP$plot.boundary$y + ext.adjust[3:4], expand = F) +
     ggplot2::scale_x_continuous(name = "Longitude", breaks = MAP$lon.breaks) +
     ggplot2::scale_y_continuous(name = "Latitude", breaks = MAP$lat.breaks) +
     ggplot2::theme_bw() +
@@ -242,9 +251,13 @@ MakeAKGFDotplot <- function(presence,
     }
     dotplot <- dotplot +
       ggplot2::geom_label(
-        data = data.frame(x = title.pos[1], y = title.pos[2], label = title.name),
-        ggplot2::aes(x = x, y = y, label = label, hjust = 0, vjust = 1), size = 5
+        data = data.frame(x = title.x, y = title.y, label = title.name),
+        ggplot2::aes(x = x, y = y, label = label),
+        hjust = title_h,
+        vjust = title_v,
+        size = 5
       )
+
   }
 
   # add a legend
