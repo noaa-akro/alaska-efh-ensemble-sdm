@@ -140,6 +140,7 @@ MakeAKGFDotplot <- function(presence,
         title_h <- 0 #left
         title_v <- 1 #top
       }
+      title.pos <- c(title.x, title.y)
     }else{
       title.pos<-NA
     }
@@ -245,7 +246,7 @@ MakeAKGFDotplot <- function(presence,
     )
 
   # add a title
-  if (is.na(title.name) == F && length(title.pos) == 2) {
+  if (!is.na(title.name)[1] && length(title.pos) == 2) {
     if (title.count) {
       title.name <- paste0(title.name, "\nN = ", format(nrow(pres.sf), big.mark = ","))
     }
