@@ -1,6 +1,9 @@
 # This is going to be a new, complete version that runs all models, including any recent fixes such as the maxnet tuning routine.
 # Will also incorporate the publication figures.
 
+#remove.packages("EFHSDM") #ctrl + shift + f10 to restart
+#devtools::install_github("alaska-groundfish-efh/EFHSDM@dev", dependencies = TRUE, build_vignettes = FALSE)
+
 library(EFHSDM)
 library(magrittr)
 library(maxnet)
@@ -8,12 +11,12 @@ library(terra)
 
 masterplan<-utils::read.csv("M:/HCD/shared_hcd_projects/2028 EFH SDM/masterplan.csv")
 computer.name <- "MYlaptop"
-region <- "AI"
+region <- "EBS"
 
 # Use this to specify a particular species or subset of species and some other control parameters
 # set species.vec and region.vec to NA in order to run everything
-species.vec <- "ej_atf" #dogfish"                              # use the column abbreviations to select specific species
-region.vec <- "AI" #"GOA"
+species.vec <- c("j_atf") #dogfish"                              # use the column abbreviations to select specific species
+region.vec <- "EBS" #"GOA"
 stop.early <- T                                                  # useful if you want to stop and check results
 update.table <- T
 rerun <- T
@@ -84,7 +87,7 @@ while(done==F){
     if(region0!=region){
       region<-region0
 
-      raster.stack <- terra::rast(paste0(EFH.path, "2028_Covariates/", region, "/covariate_raster_stack_", region, ".tiff"))
+       raster.stack <- terra::rast(paste0(EFH.path, "2028_Covariates/", region, "/covariate_raster_stack_", region, ".tiff"))
       raster.stack$sponge <- terra::as.factor(raster.stack$sponge)
       raster.stack$pen <- terra::as.factor(raster.stack$pen)
       raster.stack$coral <- terra::as.factor(raster.stack$coral)
@@ -119,11 +122,16 @@ while(done==F){
 
 
     # Assign the folds from here
+    #spatial = T will run blockCV,
+    #spatial = F will randomly assign folds
     seed<-masterplan$Species_Code[i]
     set.seed(seed)
 
-    random.folds<-rep(LETTERS[1:10],length.out=nrow(species.data0))
-    species.data0$Folds<-sample(random.folds,size = nrow(species.data0),replace = F)
+    species.data0 <- AssignFolds(
+      data = species.data0,
+      spatial = T,
+      k = 10
+    )
 
     n.pres<-sum(species.data0[,s]>0)
 
@@ -824,7 +832,7 @@ while(done==F){
 
       grDevices::png(filename = paste0(species.path,"/ensemble_efh.png"),width = png.width,height = png.height,res=600,units="in")
       print(MakeAKGFEFHplot(region=tolower(region),efh.map = ensemble.efh,survey.area = raster.stack$bdepth,
-                            legend.title = "Percentiles",title.name = paste0(figure.name,"\n(",model.name,")")))
+                            legend.title = "Percentiles",title.name = paste0(figure.name,"\n(ensemble)")))
       grDevices::dev.off()
 
       #ensemble variance
@@ -872,7 +880,8 @@ while(done==F){
     }
 
     # update the progress table
-    progress.table<-utils::read.csv(file=paste0(EFH.path,"/ModelProgress_offset_reruns.csv"),stringsAsFactors = F)
+    progress.table<-utils::read.csv(file=paste0(EFH.path,"/ProgressChecker.csv"),stringsAsFactors = F)
+
 
     progress.table$N[i]<-n.pres
 
