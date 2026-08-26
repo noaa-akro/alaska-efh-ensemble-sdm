@@ -29,3 +29,17 @@ Fit a MaxEnt model for presence/absence
 This function fits a maxnet model. Maxnet is somewhat more finicky about NA values and
 covariate names, so code has been added to make sure those match
 }
+\examples{
+species.data <- readRDS(system.file("test_files", "goa_data_logarea_folds.rds", package = "EFHSDM"))
+maxnet.covars <- c(
+  "bcurrentU", "bcurrentV", "bcurrentUSD", "bcurrentVSD", "bdepth",
+  "slope", "aspectE", "aspectN", "curve", "btemp", "tmax", "rocky", "BPI"
+)
+cofactors <- c("sponge", "coral", "pen")
+r.mult <- 0.5
+maxnet.model0 <- FitMaxnet(
+  data = species.data, species = "dogfish", vars = maxnet.covars,
+  facs = cofactors,
+  regmult = r.mult, reduce = T
+)
+}
