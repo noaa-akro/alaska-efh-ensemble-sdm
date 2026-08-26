@@ -23,7 +23,7 @@ AssignFolds <- function(data,
                         k = 10,
                         species = NULL,
                         coords = c("lon", "lat"),
-                        crs = 4326,
+                        crs = 3338,
                         fold_col = "Folds") {
 
   fold_labels <- LETTERS[1:k]
