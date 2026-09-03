@@ -80,7 +80,7 @@ AssignFolds <- function(data,
           progress = FALSE
         )
       }
-    } else{
+    } else {
       sb <- blockCV::cv_spatial(
         x = data_sf,
         column = species,
@@ -90,10 +90,6 @@ AssignFolds <- function(data,
         progress = FALSE
       )
     }
-
-    # Generate spatial blocking folds
-
-
 
     # Assign spatial block IDs mapped to fold letters
     data[[fold_col]] <- fold_labels[sb$folds_ids]
