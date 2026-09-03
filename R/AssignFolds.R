@@ -4,6 +4,7 @@
 #'
 #' @param data data frame containing species observation data and spatial coordinates
 #' @param spatial logical; if TRUE (default), uses blockCV to create spatial block folds. If FALSE, assigns random folds
+#' @param region region which sets what the block size will be (default is NULL)
 #' @param k integer; number of cross-validation folds to create (default is 10)
 #' @param species character; optional column name for species presence/absence or abundance data to balance occurrences across spatial folds
 #' @param coords character vector of length 2; column names representing x/longitude and y/latitude coordinates (default is c("lon", "lat"))
@@ -20,6 +21,8 @@
 #'
 AssignFolds <- function(data,
                         spatial = TRUE,
+                        region = NULL,
+                        size = "default",
                         k = 10,
                         species = NULL,
                         coords = c("lon", "lat"),
@@ -36,17 +39,79 @@ AssignFolds <- function(data,
     # Convert data frame to spatial sf object
     data_sf <- sf::st_as_sf(data, coords = coords, crs = crs)
 
+    region <- tolower(region)
+    if (size == "default") {
+      if (region %in% c("ai", "ai.west", "ai.central", "ai.east")) {
+       sb <- blockCV::cv_spatial(
+          x = data_sf,
+          column = species,
+          size <- 35000,
+          k = k,
+          selection = "random",
+          progress = FALSE
+        )
+      }
+      if (region %in% c("ebs", "bs.all", "bs.south", "sebs", "ecs", "ebs.ecs")) {
+        sb <- blockCV::cv_spatial(
+          x = data_sf,
+          column = species,
+          size <- 280000,
+          k = k,
+          selection = "random",
+          progress = FALSE
+        )
+        }
+      if (region %in% c("goa", "goa.west", "goa.east")) {
+        sb <- blockCV::cv_spatial(
+          x = data_sf,
+          column = species,
+          size <- 43000,
+          k = k,
+          selection = "random",
+          progress = FALSE
+        )
+      }
+      if (is.null(region)){
+        sb <- blockCV::cv_spatial(
+          x = data_sf,
+          column = species,
+          k = k,
+          selection = "random",
+          progress = FALSE
+        )
+      }
+    } else{
+      sb <- blockCV::cv_spatial(
+        x = data_sf,
+        column = species,
+        k = k,
+        size = size,
+        selection = "random",
+        progress = FALSE
+      )
+    }
+
     # Generate spatial blocking folds
-    sb <- blockCV::cv_spatial(
-      x = data_sf,
-      column = species,
-      k = k,
-      selection = "random",
-      progress = FALSE
-    )
+
+
 
     # Assign spatial block IDs mapped to fold letters
     data[[fold_col]] <- fold_labels[sb$folds_ids]
+}
+    if (is.null(region)){
+      # Generate spatial blocking folds
+      sb <- blockCV::cv_spatial(
+        x = data_sf,
+        column = species,
+        k = k,
+        selection = "random",
+        progress = FALSE
+      )
+
+      # Assign spatial block IDs mapped to fold letters
+      data[[fold_col]] <- fold_labels[sb$folds_ids]
+    }
+
 
   } else {
     # Generate random fold assignments
