@@ -39,42 +39,32 @@ AssignFolds <- function(data,
     # Convert data frame to spatial sf object
     data_sf <- sf::st_as_sf(data, coords = coords, crs = crs)
 
-    region <- tolower(region)
     if (size == "default") {
-      if (region %in% c("ai", "ai.west", "ai.central", "ai.east")) {
-       sb <- blockCV::cv_spatial(
-          x = data_sf,
-          column = species,
-          size <- 35000,
-          k = k,
-          selection = "random",
-          progress = FALSE
-        )
+      reg <- if (!is.null(region)) tolower(region) else ""
+
+      if (reg %in% c("ai", "ai.west", "ai.central", "ai.east")) {
+        block_size <- 35000
+      } else if (reg %in% c("ebs", "bs.all", "bs.south", "sebs", "ecs", "ebs.ecs")) {
+        block_size <- 280000
+      } else if (reg %in% c("goa", "goa.west", "goa.east")) {
+        block_size <- 43000
+      } else {
+        block_size <- NULL
       }
-      if (region %in% c("ebs", "bs.all", "bs.south", "sebs", "ecs", "ebs.ecs")) {
+
+      if (is.null(block_size)) {
         sb <- blockCV::cv_spatial(
           x = data_sf,
           column = species,
-          size <- 280000,
           k = k,
           selection = "random",
           progress = FALSE
         )
-        }
-      if (region %in% c("goa", "goa.west", "goa.east")) {
+      } else {
         sb <- blockCV::cv_spatial(
           x = data_sf,
           column = species,
-          size <- 43000,
-          k = k,
-          selection = "random",
-          progress = FALSE
-        )
-      }
-      if (is.null(region)){
-        sb <- blockCV::cv_spatial(
-          x = data_sf,
-          column = species,
+          size = block_size,
           k = k,
           selection = "random",
           progress = FALSE
@@ -84,30 +74,14 @@ AssignFolds <- function(data,
       sb <- blockCV::cv_spatial(
         x = data_sf,
         column = species,
-        k = k,
         size = size,
+        k = k,
         selection = "random",
         progress = FALSE
       )
     }
-
     # Assign spatial block IDs mapped to fold letters
     data[[fold_col]] <- fold_labels[sb$folds_ids]
-}
-    if (is.null(region)){
-      # Generate spatial blocking folds
-      sb <- blockCV::cv_spatial(
-        x = data_sf,
-        column = species,
-        k = k,
-        selection = "random",
-        progress = FALSE
-      )
-
-      # Assign spatial block IDs mapped to fold letters
-      data[[fold_col]] <- fold_labels[sb$folds_ids]
-    }
-
 
   } else {
     # Generate random fold assignments
