@@ -3,6 +3,7 @@
 #' @description Make an HTML table of deviance explained and fit metrics for a model ensemble.
 #' @details For now, you need to include each of the elements for the ensemble table to work, so no shortcuts. It is kind of cumbersome and unlikely to be useful for others. May soon be deprecated.
 #' @param model.names vector of names for the models
+#' @param display.names vector of formatted display names (uses HTML tags for subscripts); automatically set if NULL
 #' @param ensemble logical; is an ensemble included
 #' @param weights vector of weights for each model other than the ensemble
 #' @param converge.vec vector of T/F for whether models converged
@@ -19,6 +20,7 @@
 #'
 #' @examples
 MakeEnsembleXtable<-function(model.names=c("maxnet","cloglog","hpoisson","poisson","negbin"),
+                             display.names = NULL,
                              ensemble=T,
                              weights=NULL,
                              converge.vec=NULL,
@@ -30,8 +32,20 @@ MakeEnsembleXtable<-function(model.names=c("maxnet","cloglog","hpoisson","poisso
                              areas=NULL,
                              filename){
 
+  # Default label mapping for display names with HTML subscripts
+  if (is.null(display.names)) {
+    label_map <- c(
+      "maxnet"   = "MaxEnt",
+      "cloglog"  = "paGAM",
+      "hpoisson" = "hGAM",
+      "poisson"  = "GAM<sub>p</sub>",
+      "negbin"   = "GAM<sub>nb</sub>"
+    )
+    display.names <- ifelse(model.names %in% names(label_map), label_map[model.names], model.names)
+  }
+
   # this part detects what data are available and formats things appropriately, sturdy to missing data
-  dim.names<-"Model"
+  dim.names<-"Models"
 
   if(sum(c(is.null(preds.table)==F,is.na(preds.table)==F))>1){
     N.col<-2
@@ -73,7 +87,7 @@ MakeEnsembleXtable<-function(model.names=c("maxnet","cloglog","hpoisson","poisso
   etable<-array("",dim=c(3+n.models,length(dim.names)))
 
   # now go back and fill the rows in
-  etable[,1]<-c("Model",model.names,".","ensemble")
+  etable[, 1] <- c("Models", display.names, ".", "ensemble")
   etable[1,]<-dim.names
 
   if(sum(c(is.null(preds.table)==F,is.na(preds.table)==F))>1){
@@ -170,7 +184,10 @@ MakeEnsembleXtable<-function(model.names=c("maxnet","cloglog","hpoisson","poisso
 
   ensemble.table <- xtable::xtable(etable)
   xtable::print.xtable(ensemble.table, type = "html", file = filename,
-                       include.rownames = getOption("xtable.include.rownames", FALSE), html.table.attributes = 2,
-                       include.colnames = getOption("xtable.include.colnames", FALSE), hline.after = getOption("xtable.hline.after",
-                                                                                                               c(-1, 1, nrow(ensemble.table))))
+                       include.rownames = getOption("xtable.include.rownames", FALSE),
+                       html.table.attributes = 2,
+                       include.colnames = getOption("xtable.include.colnames", FALSE),
+                       hline.after = getOption("xtable.hline.after", c(-1, 1, nrow(ensemble.table))),
+                       sanitize.text.function = identity)
+
 }
