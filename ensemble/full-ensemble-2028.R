@@ -11,18 +11,18 @@ library(terra)
 
 masterplan<-utils::read.csv("M:/HCD/shared_hcd_projects/2028 EFH SDM/masterplan.csv")
 computer.name <- "MYlaptop"
-region <- "EBS"
+region <- ""
 
 # Use this to specify a particular species or subset of species and some other control parameters
 # set species.vec and region.vec to NA in order to run everything
-species.vec <- c("j_atf") #dogfish"                              # use the column abbreviations to select specific species
-region.vec <- "EBS" #"GOA"
-stop.early <- T                                                  # useful if you want to stop and check results
+species.vec <- c("ej_atf", "j_atf", "a_atf") #dogfish"                              # use the column abbreviations to select specific species
+region.vec <- "GOA" #"GOA"
+stop.early <- F                                                # useful if you want to stop and check results
 update.table <- T
-rerun <- T
+rerun <- F
 make.ensemble <- T
 group.var <- "Folds"                       #Do you want to group by spatial zone or random fold
-
+folds_spatial <- T
 EFH.path <- "M:/HCD/shared_hcd_projects/2028 EFH SDM/"
 
 # set of nicer names to be used in figure labels
@@ -48,22 +48,22 @@ nice.names<-data.frame(stringsAsFactors = F,
 nice.names2<-data.frame(var=nice.names$var, name=nice.names$name, stringsAsFactors = F)
 
 done<-F
+while(!done){
 
-while(done==F){
-  # now, going to figure out which species to do next
+  if(all(is.na(species.vec))){ species.vec <- unique(masterplan$Abbreviation) }
+  if(all(is.na(region.vec))){ region.vec <- c("AI", "EBS", "GOA") }
 
-  if(is.na(species.vec)){species.vec<-unique(masterplan$Abbreviation)}
-  if(is.na(region.vec)){region.vec<-c("AI","EBS","GOA")}
+  unclaimed <- which((is.na(masterplan$Claimed) | masterplan$Claimed == "") &
+                       masterplan$Region %in% region.vec &
+                       masterplan$Abbreviation %in% species.vec)
 
-  unclaimed<-which(is.na(masterplan$Claimed) & masterplan$Region%in%region.vec & masterplan$Abbreviation%in%species.vec)
-
-  if(length(unclaimed)==0 & rerun==F){
-    print("No unclaimed models; ending routine!!!")
-    done<-T
-  }else{
+  if(length(unclaimed) == 0){
+    print("No unclaimed models remaining; ending routine!")
+    done <- T
+  } else{
 
     # alternately, you can just set a value for i here to run a single species
-    #i<-unclaimed[1]
+   i<-unclaimed[1]
    # i <- species.vec[1]
     #i <- 1
     if(rerun){
@@ -87,7 +87,7 @@ while(done==F){
     if(region0!=region){
       region<-region0
 
-       raster.stack <- terra::rast(paste0(EFH.path, "2028_Covariates/", region, "/covariate_raster_stack_", region, ".tiff"))
+      raster.stack <- terra::rast(paste0(EFH.path, "2028_Covariates/", region, "/covariate_raster_stack_", region, ".tiff"))
       raster.stack$sponge <- terra::as.factor(raster.stack$sponge)
       raster.stack$pen <- terra::as.factor(raster.stack$pen)
       raster.stack$coral <- terra::as.factor(raster.stack$coral)
@@ -114,22 +114,25 @@ while(done==F){
       region.data$logarea <- log(region.data$area)
     }
 
-    start.year <- 1993
-    species.data0 <- subset(region.data, year>=start.year)
+    start.year <- 2020
+    end.year <- 2025
+    species.data0 <- subset(region.data, year >= start.year & year <= end.year)
 
     species.path <- paste0(EFH.path,"Trawl_Models2/",region,"/",
                            paste(strsplit(masterplan$File_name[i],"_")[[1]][2:3],collapse="_"))
 
 
-    # Assign the folds from here
-    #spatial = T will run blockCV,
-    #spatial = F will randomly assign folds
+
     seed<-masterplan$Species_Code[i]
     set.seed(seed)
 
+    # Assign the folds from here
+    #spatial = T will run blockCV,
+    #spatial = F will randomly assign folds
     species.data0 <- AssignFolds(
       data = species.data0,
-      spatial = T,
+      region = region,
+      spatial = folds_spatial,
       k = 10
     )
 
@@ -863,7 +866,7 @@ while(done==F){
       names(model.errors)[list.index]<-"ensemble"
 
       # save the cv errors and predictions, in case you want to analyze them later
-      model.vec<-c(model.vec,"ensemble")
+       model.vec<-c(model.vec,"ensemble")
 
       error.table<-data.frame(Model=model.vec[1],model.errors[[1]],stringsAsFactors = F)
       for(f in 2:length(model.errors)){
@@ -871,7 +874,7 @@ while(done==F){
       }
       utils::write.csv(x = error.table,file = paste0(species.path,"/cv_error_data.csv"),row.names = F)
 
-      MakeEnsembleXtable(weights = model.weights,preds.table = error.table,converge.vec = model.converge.vec,
+      MakeEnsembleXtable(weights = model.weights, preds.table = error.table, converge.vec = model.converge.vec,
                          abund.check.vec=model.abund.check.vec,scale.facs = model.scales,areas = area.vec,
                          efh.breaks=model.breaks,cor.method="spearman",
                          filename = paste0(species.path,"/ensemble_table.html"))
@@ -881,7 +884,13 @@ while(done==F){
 
     # update the progress table
     progress.table<-utils::read.csv(file=paste0(EFH.path,"/ProgressChecker.csv"),stringsAsFactors = F)
-
+    # Pre-initialize missing columns with NA so they match the total row count (96)
+    req_cols <- c("N", "Maxnet", "Cloglog", "Hpoisson", "Poisson", "Negbin", "Ensemble", "Completed")
+    for (col in req_cols) {
+      if (!col %in% names(progress.table)) {
+        progress.table[[col]] <- NA
+      }
+    }
 
     progress.table$N[i]<-n.pres
 
@@ -901,30 +910,38 @@ while(done==F){
       stop("Stopping Early due to user selected request!!")
     }
     #remove anything you don't want to carry over to the next species/life-stage
-    rm(start.time,n.pres,
-       maxnet.model,cloglog.model,hpoisson.model,poisson.model,negbin.model,model.list,
-       maxnet.abund,cloglog.abund,hpoisson.abund,poisson.abund,negbin.abund,ensemble.abund,
-       maxnet.breaks,cloglog.breaks,hpoisson.breaks,poisson.breaks,negbin.breaks,ensemble.breaks,model.breaks,
-       maxnet.efh,cloglog.efh,hpoisson.efh,poisson.efh,negbin.efh,ensemble.efh,efh.list,
-       maxnet.cv,cloglog.cv,hpoisson.cv,poisson.cv,negbin.cv,
-       maxnet.errors,cloglog.errors,hpoisson.errors,poisson.errors,negbin.errors,
-       maxnet.rmse,cloglog.rmse,hpoisson.rmse,poisson.rmse,negbin.rmse,
-       maxnet.cv.models,cloglog.cv.models,hpoisson.cv.models,poisson.cv.models,negbin.cv.models,
-       maxnet.var,cloglog.var,hpoisson.var,poisson.var,negbin.var,ensemble.var,
-       maxnet.variance,cloglog.variance,hpoisson.variance,poisson.variance,negbin.variance,ensemble.variance,
-       maxnet.error.raster,cloglog.error.raster,hpoisson.error.raster,poisson.error.raster,negbin.error.raster,ensemble.error.raster,
-       maxnet.preds,cloglog.preds,hpoisson.preds,poisson.preds,negbin.preds,ensemble.preds,
-       max.stats,cloglog.dev,hpoisson.dev,poisson.dev,negbin.dev,
-       maxnet.area,cloglog.area,hpoisson.area,poisson.area,negbin.area,ensemble.area,
-       maxnet.effects,cloglog.effects,hpoisson.effects,poisson.effects,negbin.effects,
-       maxnet.converge,cloglog.converge,hpoisson.converge,poisson.converge,negbin.converge,ensemble.success,model.converge.vec,
-       maxnet.abund.check,cloglog.abund.check,hpoisson.abund.check,poisson.abund.check,negbin.abund.check,
-       maxnet.abund.check0,maxnet.converge0,model.abund.check.vec,maxnet.scale.vec,
-       maxnet.scale,cloglog.scale,hpoisson.scale,poisson.scale,negbin.scale,
-       cv.model.list,effects.list,maxnet.abund.list,maxnet.cv.model.list,maxnet.model.list,maxnet.pred.list,
-       dev.dat,dev.list,maxstats,maxnet.coefs,maxnet2d,var.list,rmse.vec,
-       model.types,model.vec,train.list,test.list,pred.data,area.vec,abund.list,list.index,auc.vec,model.weights,
-       weights,abund.list,drop.terms,good.terms,good.terms0,en.eff,en.eff2,error.table,model.errors,model.scales)
+    vars_to_remove <- c(
+      "start.time", "n.pres", "maxnet.model", "cloglog.model", "hpoisson.model", "poisson.model",
+      "negbin.model", "model.list", "maxnet.abund", "cloglog.abund", "hpoisson.abund",
+      "poisson.abund", "negbin.abund", "ensemble.abund", "maxnet.breaks", "cloglog.breaks",
+      "hpoisson.breaks", "poisson.breaks", "negbin.breaks", "ensemble.breaks", "model.breaks",
+      "maxnet.efh", "cloglog.efh", "hpoisson.efh", "poisson.efh", "negbin.efh", "ensemble.efh",
+      "efh.list", "maxnet.cv", "cloglog.cv", "hpoisson.cv", "poisson.cv", "negbin.cv",
+      "maxnet.errors", "cloglog.errors", "hpoisson.errors", "poisson.errors", "negbin.errors",
+      "maxnet.rmse", "cloglog.rmse", "hpoisson.rmse", "poisson.rmse", "negbin.rmse",
+      "maxnet.cv.models", "cloglog.cv.models", "hpoisson.cv.models", "poisson.poisson.cv.models",
+      "negbin.cv.models", "maxnet.var", "cloglog.var", "hpoisson.var", "poisson.var",
+      "negbin.var", "ensemble.var", "maxnet.variance", "cloglog.variance", "hpoisson.variance",
+      "poisson.variance", "negbin.variance", "ensemble.variance", "maxnet.error.raster",
+      "cloglog.error.raster", "hpoisson.error.raster", "poisson.error.raster", "negbin.error.raster",
+      "ensemble.error.raster", "maxnet.preds", "cloglog.preds", "hpoisson.preds", "poisson.preds",
+      "negbin.preds", "ensemble.preds", "max.stats", "cloglog.dev", "hpoisson.dev", "poisson.dev",
+      "negbin.dev", "maxnet.area", "cloglog.area", "hpoisson.area", "poisson.area", "negbin.area",
+      "ensemble.area", "maxnet.effects", "cloglog.effects", "hpoisson.effects", "poisson.effects",
+      "negbin.effects", "maxnet.converge", "cloglog.converge", "hpoisson.converge", "poisson.converge",
+      "negbin.converge", "ensemble.success", "model.converge.vec", "maxnet.abund.check",
+      "cloglog.abund.check", "hpoisson.abund.check", "poisson.abund.check", "negbin.abund.check",
+      "maxnet.abund.check0", "maxnet.converge0", "model.abund.check.vec", "maxnet.scale.vec",
+      "maxnet.scale", "cloglog.scale", "hpoisson.scale", "poisson.scale", "negbin.scale",
+      "cv.model.list", "effects.list", "maxnet.abund.list", "maxnet.cv.model.list",
+      "maxnet.model.list", "maxnet.pred.list", "dev.dat", "dev.list", "maxstats", "maxnet.coefs",
+      "maxnet2d", "var.list", "rmse.vec", "model.types", "model.vec", "train.list", "test.list",
+      "pred.data", "area.vec", "abund.list", "list.index", "auc.vec", "model.weights", "weights",
+      "drop.terms", "good.terms", "good.terms0", "en.eff", "en.eff2", "error.table", "model.errors",
+      "model.scales"
+    )
+
+    rm(list = intersect(ls(), vars_to_remove))
     print(paste0(Sys.time()," finished models for species: ",s))
   }
 }
