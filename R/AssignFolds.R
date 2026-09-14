@@ -45,9 +45,9 @@ AssignFolds <- function(data,
       if (reg %in% c("ai", "ai.west", "ai.central", "ai.east")) {
         block_size <- 35000
       } else if (reg %in% c("ebs", "bs.all", "bs.south", "sebs", "ecs", "ebs.ecs")) {
-        block_size <- 280000
+        block_size <- 200000
       } else if (reg %in% c("goa", "goa.west", "goa.east")) {
-        block_size <- 43000
+        block_size <- 50000
       } else {
         block_size <- NULL
       }

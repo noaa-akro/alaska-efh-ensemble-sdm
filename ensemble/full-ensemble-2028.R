@@ -16,7 +16,7 @@ region <- ""
 # Use this to specify a particular species or subset of species and some other control parameters
 # set species.vec and region.vec to NA in order to run everything
 species.vec <- c("ej_atf", "j_atf", "a_atf") #dogfish"                              # use the column abbreviations to select specific species
-region.vec <- "GOA" #"GOA"
+region.vec <- "AI" #"GOA"
 stop.early <- F                                                # useful if you want to stop and check results
 update.table <- T
 rerun <- F

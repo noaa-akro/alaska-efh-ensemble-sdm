@@ -59,7 +59,7 @@ MakeAKGFDensityplot <- function(region,
   if (length(legend.pos)<2){
     if(legend.pos == "default") {
       if (region %in% c("ai", "ai.west", "ai.central", "ai.east")) {
-        legend.pos <- c(0.08, 0.28)
+        legend.pos <- c(0.12, 0.20)
       }
       if (region %in% c("ebs", "bs.all", "bs.south", "sebs", "ecs", "ebs.ecs")) {
         legend.pos <- c(0.12, 0.18)
