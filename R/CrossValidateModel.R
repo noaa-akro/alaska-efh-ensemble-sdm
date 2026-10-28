@@ -29,7 +29,7 @@ CrossValidateModel<-function(model,
                              folds=10,
                              group="random"){
   if(model.type!="maxnet"){
-    species<-ifelse(model$family$family=="ziplss",as.character(stats::formula(model)[[1]])[[2]],as.character(stats::formula(model))[[2]])
+    species<-ifelse(model$family$family=="ziplss", as.character(stats::formula(model)[[1]])[[2]], as.character(stats::formula(model))[[2]])
   }
 
   if(model.type%in%c("maxnet","cloglog","hgam","gam")==F){

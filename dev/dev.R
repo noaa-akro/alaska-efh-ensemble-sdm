@@ -32,6 +32,9 @@ usethis::use_package("scales", type = "Imports", min_version = NULL)
 usethis::use_package("magrittr", type = "Imports", min_version = NULL)
 usethis::use_package("terra", type = "Imports", min_version = NULL)
 
+# Cross-validation dependencies
+usethis::use_package("blockCV", type = "Imports", min_version = "3.0.0")
+
 # GamModel dependencies
 usethis::use_package("mgcv", type = "Imports", min_version = NULL) # used by multiple fns
 usethis::use_package("PresenceAbsence", type = "Imports", min_version = NULL)
