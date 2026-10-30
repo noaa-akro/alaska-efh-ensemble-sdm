@@ -15,14 +15,14 @@ region <- ""
 
 # Use this to specify a particular species or subset of species and some other control parameters
 # set species.vec and region.vec to NA in order to run everything
-species.vec <- c("ej_atf", "j_atf", "a_atf") #dogfish"                              # use the column abbreviations to select specific species
-region.vec <- "AI" #"GOA"
+species.vec <- c("rkc_immature_female") #dogfish"                              # use the column abbreviations to select specific species
+region.vec <- "EBS" #"GOA"
 stop.early <- F                                                # useful if you want to stop and check results
-update.table <- T
+update.table <- F #turn to F if troubleshooting
 rerun <- F
 make.ensemble <- T
 group.var <- "Folds"                       #Do you want to group by spatial zone or random fold
-folds_spatial <- T
+folds_spatial <- F
 EFH.path <- "M:/HCD/shared_hcd_projects/2028 EFH SDM/"
 
 # set of nicer names to be used in figure labels
@@ -99,7 +99,7 @@ while(!done){
 
       # Load the data
       #region.data <- utils::read.csv(paste0(EFH.path, "/Trawl_Models2/", region, "/all_", region, "_data_2021.csv"))
-      region.data <- readRDS(here::here("data", paste0("all_", region, "_data_1993_2025.rds")))
+      region.data <- readRDS(here::here("data", paste0("all_", region, "_data_1993_2025_w_crab.rds")))
 
       # small adjustment for the REBS complex & dogfish
       #region.data$j_rebs <- region.data$j_rebs + region.data$j_rough + region.data$j_bspot
@@ -114,7 +114,7 @@ while(!done){
       region.data$logarea <- log(region.data$area)
     }
 
-    start.year <- 2020
+    start.year <- 1993
     end.year <- 2025
     species.data0 <- subset(region.data, year >= start.year & year <= end.year)
 
@@ -123,7 +123,7 @@ while(!done){
 
 
 
-    seed<-masterplan$Species_Code[i]
+    seed <- masterplan$Species_Code[i]
     set.seed(seed)
 
     # Assign the folds from here
@@ -174,7 +174,7 @@ while(!done){
       }else{
         species.data<-species.data0
       }
-
+      species.data[[s]] <- round(species.data[[s]])
       # also remember to log the area
       species.data$logarea<-log(species.data$area)
 
