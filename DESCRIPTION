@@ -43,7 +43,8 @@ Imports:
     magrittr,
     terra,
     tidyterra
-Remotes: afsc-gap-products/akgfmaps
+Remotes: 
+  akgfmaps=afsc-gap-products/akgfmaps
 Depends: 
     R (>= 3.5.0)
 LazyData: 
